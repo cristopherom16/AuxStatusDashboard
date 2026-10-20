@@ -67,7 +67,6 @@
       color: #1e293b !important;
     }
 
-    /* Yellow Gridlines and Border Accents */
     .border-yellow-accent {
       border-color: #facc15 !important;
     }
@@ -457,6 +456,14 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
+    // Helper function to extract local date key (YYYY-MM-DD) without UTC timezone shift
+    function getLocalDateKey(dateObj) {
+      const yyyy = dateObj.getFullYear();
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
     // --- DEFAULT BRANCH MAPPING ---
     const DEFAULT_ROSTER = {
       "MJ Rafols": "Philippines", "Omar Jimenez": "Mexico", "Kevin Williams": "Panama", "Benneth Smith": "Panama",
@@ -496,16 +503,15 @@
     let appState = {
       roster: { ...DEFAULT_ROSTER },
       logs: [],
-      selectedDate: new Date().toISOString().split('T')[0],
-      unlockedManagement: false,
-      isPendingSave: false
+      selectedDate: getLocalDateKey(new Date()),
+      unlockedManagement: false
     };
 
     let auxChartInstance = null;
     let topOffendersChartInstance = null;
     let alertTimeout = null;
 
-    // Load LocalStorage immediately on startup including active selectedDate
+    // Load LocalStorage immediately on startup
     try {
       const localRoster = localStorage.getItem('aux_dashboard_roster');
       const localLogs = localStorage.getItem('aux_dashboard_logs');
@@ -531,7 +537,7 @@
           if (val.logs) {
             const remoteLogs = Array.isArray(val.logs) ? val.logs : Object.values(val.logs);
             
-            // Merge local and remote logs using unique IDs so no local records vanish
+            // Merge local and remote logs using unique IDs so local entries are preserved
             const logMap = new Map();
             appState.logs.forEach(l => { if(l && l.id) logMap.set(l.id, l); });
             remoteLogs.forEach(l => { if(l && l.id) logMap.set(l.id, l); });
@@ -539,11 +545,10 @@
             appState.logs = Array.from(logMap.values());
           }
         } else if (appState.logs.length > 0) {
-          // If remote DB is empty but local has logs, back them up to Firebase
           saveStateToStorage();
         }
 
-        // Save merged state back to LocalStorage
+        // Persist back to LocalStorage
         try {
           localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
           localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
@@ -559,7 +564,7 @@
     }
 
     function saveStateToStorage() {
-      // 1. Save roster, logs and selected date to LocalStorage
+      // 1. Synchronously save roster, logs, and selectedDate to LocalStorage
       try {
         localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
         localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
@@ -567,8 +572,6 @@
       } catch(e) {
         console.warn("LocalStorage error:", e);
       }
-
-      appState.isPendingSave = false;
 
       // 2. Direct sync write to Firebase RTDB
       return database.ref('dashboard_data').set({
@@ -701,18 +704,20 @@
       });
 
       prevBtn.addEventListener('click', () => {
-        const current = new Date(appState.selectedDate + 'T00:00:00');
+        const parts = appState.selectedDate.split('-');
+        const current = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         current.setDate(current.getDate() - 1);
-        appState.selectedDate = current.toISOString().split('T')[0];
+        appState.selectedDate = getLocalDateKey(current);
         dateInput.value = appState.selectedDate;
         localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
         renderDashboard();
       });
 
       nextBtn.addEventListener('click', () => {
-        const current = new Date(appState.selectedDate + 'T00:00:00');
+        const parts = appState.selectedDate.split('-');
+        const current = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         current.setDate(current.getDate() + 1);
-        appState.selectedDate = current.toISOString().split('T')[0];
+        appState.selectedDate = getLocalDateKey(current);
         dateInput.value = appState.selectedDate;
         localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
         renderDashboard();
@@ -913,7 +918,9 @@
 
           if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
             const durationSecs = Math.max(0, Math.round((endDate - startDate) / 1000));
-            const dateKey = startDate.toISOString().split('T')[0];
+            
+            // Extract exact local YYYY-MM-DD date key
+            const dateKey = getLocalDateKey(startDate);
             if (!firstImportedDate) firstImportedDate = dateKey;
 
             const branch = appState.roster[teammate] || 'Guatemala';
