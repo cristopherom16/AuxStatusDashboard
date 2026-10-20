@@ -31,7 +31,7 @@
         }
     </script>
     <style>
-        /* Base Dark/Light Theme Settings */
+        /* Base Theme Styles */
         html.dark body {
             background-color: #090D16;
             color: #F8FAFC;
@@ -54,10 +54,11 @@
             background-color: #F1F5F9;
         }
 
-        /* 10mm Side Margins Implementation */
-        .px-10mm {
-            padding-left: 10mm;
+        /* Precise 10mm Margin Offsets based on user screenshot */
+        .layout-container {
+            padding-left: calc(10mm + 52px);
             padding-right: 10mm;
+            width: 100%;
         }
 
         /* Yellow Borders Override across UI */
@@ -85,8 +86,8 @@
 <body class="min-h-screen flex flex-col antialiased transition-colors duration-200 pb-16">
 
     <!-- TOP HEADER -->
-    <header class="bg-midnight-card border-b yellow-border sticky top-0 z-30 px-10mm py-4 shadow-xl">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <header class="bg-midnight-card border-b yellow-border sticky top-0 z-30 layout-container py-4 shadow-xl">
+        <div class="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             
             <!-- BRANDING & TITLE -->
             <div class="flex items-center space-x-3">
@@ -99,7 +100,7 @@
                     </svg>
                 </div>
                 <div>
-                    <!-- Title with AUX and DASHBOARD both in bright yellow -->
+                    <!-- Title with AUX and DASHBOARD in bright yellow -->
                     <h1 class="text-2xl font-black tracking-wider text-yellow-400 flex items-center gap-2">
                         AUX STATUS DASHBOARD
                     </h1>
@@ -139,11 +140,11 @@
         </div>
     </header>
 
-    <!-- MAIN CONTENT CONTAINER WITH 10mm PADDING -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-10mm py-6 space-y-6">
+    <!-- MAIN CONTENT CONTAINER WITH PRECISE FULL-WIDTH MARGINS -->
+    <main class="flex-1 w-full layout-container py-6 space-y-6">
 
         <!-- FILTERS BAR -->
-        <div class="bg-midnight-card border yellow-border rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-md">
+        <div class="bg-midnight-card border yellow-border rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-md w-full">
             <div class="flex items-center gap-2 text-yellow-400 font-bold text-sm">
                 <i data-lucide="filter" class="w-4 h-4 text-yellow-400"></i>
                 <span>Active Filters:</span>
@@ -179,13 +180,14 @@
                 </div>
             </div>
 
-            <button id="btnResetFilters" class="text-xs text-yellow-400 hover:underline font-semibold transition">
-                Reset Filters
+            <button id="btnResetFilters" class="text-xs text-yellow-400 hover:underline font-semibold transition flex items-center gap-1">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-yellow-400"></i>
+                <span>Reset Filters</span>
             </button>
         </div>
 
         <!-- KPI STAT CARDS -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
             
             <!-- KPI 1 -->
             <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex items-center justify-between relative overflow-hidden">
@@ -203,8 +205,8 @@
             <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex items-center justify-between relative overflow-hidden">
                 <div class="space-y-1 z-10">
                     <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Total AUX Time</p>
-                    <h3 id="kpiTotalTime" class="text-3xl font-black text-yellow-400">0h 0m</h3>
-                    <p class="text-xs text-slate-400">Logged today</p>
+                    <h3 id="kpiTotalTime" class="text-3xl font-black text-yellow-400">0s</h3>
+                    <p class="text-xs text-slate-400">Logged for selected filters</p>
                 </div>
                 <div class="p-3 bg-yellow-400/10 text-yellow-400 rounded-xl border yellow-border">
                     <i data-lucide="clock" class="w-7 h-7"></i>
@@ -227,7 +229,7 @@
             <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex items-center justify-between relative overflow-hidden">
                 <div class="space-y-1 z-10">
                     <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Top Overall Offender</p>
-                    <h3 id="kpiTopOffenderName" class="text-lg font-extrabold text-red-400 truncate max-w-[150px]">N/A</h3>
+                    <h3 id="kpiTopOffenderName" class="text-lg font-extrabold text-red-400 truncate max-w-[150px]">None</h3>
                     <p id="kpiTopOffenderDetails" class="text-xs text-slate-400">0 violations</p>
                 </div>
                 <div class="p-3 bg-red-500/10 text-red-400 rounded-xl border border-red-500/30">
@@ -238,7 +240,7 @@
         </div>
 
         <!-- TOP OFFENDERS BY STATUS CARDS SECTION -->
-        <div>
+        <div class="w-full">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-lg font-black text-yellow-400 flex items-center gap-2">
                     <i data-lucide="shield-alert" class="w-5 h-5 text-yellow-400"></i>
@@ -247,19 +249,19 @@
                 <span class="text-xs text-slate-400 font-medium">Highest overtime offenders per status category</span>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" id="topOffendersGrid">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 w-full" id="topOffendersGrid">
                 <!-- Dynamically populated -->
             </div>
         </div>
 
         <!-- CHARTS SECTION -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
             
             <!-- Chart 1: Time distribution by Reason -->
             <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex flex-col">
                 <h3 class="text-sm font-black text-yellow-400 mb-4 flex items-center gap-2">
                     <i data-lucide="pie-chart" class="w-4 h-4 text-yellow-400"></i>
-                    AUX Time Distribution
+                    AUX Time Distribution (Minutes)
                 </h3>
                 <div class="flex-1 relative min-h-[240px] flex items-center justify-center">
                     <canvas id="chartStatusDist"></canvas>
@@ -280,7 +282,7 @@
         </div>
 
         <!-- DATA TABLE SECTION -->
-        <div class="bg-midnight-card border yellow-border rounded-xl shadow-md overflow-hidden">
+        <div class="bg-midnight-card border yellow-border rounded-xl shadow-md overflow-hidden w-full">
             <div class="p-4 border-b yellow-border flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2">
                     <i data-lucide="list" class="w-5 h-5 text-yellow-400"></i>
@@ -297,7 +299,7 @@
             </div>
 
             <!-- Table Container with Yellow Gridlines -->
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto w-full">
                 <table class="w-full text-left text-xs border-collapse">
                     <thead>
                         <tr class="bg-midnight-input text-yellow-400 uppercase font-black border-b yellow-border">
@@ -319,23 +321,23 @@
 
             <!-- Empty State -->
             <div id="tableEmptyState" class="hidden p-12 text-center text-slate-400 space-y-3">
-                <i data-lucide="inbox" class="w-12 h-12 mx-auto text-yellow-400"></i>
-                <p class="text-base font-bold text-yellow-400">No records found for the selected date or filter criteria.</p>
-                <p class="text-xs text-slate-400">Click "Import Data" to paste new logs or adjust your active search filters.</p>
+                <i data-lucide="clipboard-paste" class="w-12 h-12 mx-auto text-yellow-400"></i>
+                <p class="text-base font-bold text-yellow-400">No logs found for the selected date or search criteria.</p>
+                <p class="text-xs text-slate-400">Click "Import Data" to paste new logs or clear active filters.</p>
             </div>
         </div>
 
     </main>
 
-    <!-- FIXED BOTTOM-LEFT LIGHT/DARK MODE TOGGLE (Margin 10mm from left) -->
-    <div class="fixed bottom-4 left-0 z-50 pl-10mm pointer-events-none">
-        <button id="themeToggleBtn" class="pointer-events-auto p-3 bg-midnight-card border yellow-border rounded-full shadow-2xl text-yellow-400 hover:scale-110 transition flex items-center justify-center">
+    <!-- FIXED BOTTOM-LEFT LIGHT/DARK MODE TOGGLE BUTTON (Placed exact 10mm from left screen edge) -->
+    <div class="fixed bottom-4 left-[10mm] z-50">
+        <button id="themeToggleBtn" class="p-2.5 bg-midnight-card border yellow-border rounded-full shadow-2xl text-yellow-400 hover:scale-110 transition flex items-center justify-center">
             <i data-lucide="sun" id="iconSun" class="w-5 h-5 text-yellow-400 hidden"></i>
             <i data-lucide="moon" id="iconMoon" class="w-5 h-5 text-yellow-400"></i>
         </button>
     </div>
 
-    <!-- TEAMMATE MANAGEMENT MODAL (ADD / EDIT / DELETE) -->
+    <!-- TEAMMATE MANAGEMENT MODAL -->
     <div id="teammatesModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-midnight-card border yellow-border rounded-2xl max-w-3xl w-full p-6 space-y-4 shadow-2xl relative max-h-[85vh] flex flex-col">
             <button id="closeTeammatesBtn" class="absolute top-4 right-4 text-slate-400 hover:text-yellow-400 transition">
@@ -348,11 +350,11 @@
                 </div>
                 <div>
                     <h3 class="text-lg font-black text-yellow-400">Manage Teammates & Branches</h3>
-                    <p class="text-xs text-slate-400">Add, edit, or remove teammates from the roster.</p>
+                    <p class="text-xs text-slate-400">Add, edit, or remove teammates from active roster.</p>
                 </div>
             </div>
 
-            <!-- Add / Edit Form -->
+            <!-- Form -->
             <div class="bg-midnight-input border yellow-border rounded-xl p-4 space-y-3">
                 <h4 id="tmFormTitle" class="text-xs font-bold text-yellow-400 uppercase">Add New Teammate</h4>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -368,7 +370,7 @@
                     </select>
                     <div class="flex gap-2">
                         <button id="tmSaveBtn" class="flex-1 bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-xs py-2 px-3 rounded-lg transition">
-                            Save Teammate
+                            Save
                         </button>
                         <button id="tmCancelEditBtn" class="hidden bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs py-2 px-3 rounded-lg transition">
                             Cancel
@@ -377,7 +379,7 @@
                 </div>
             </div>
 
-            <!-- Teammates Search & List -->
+            <!-- List -->
             <div class="flex-1 flex flex-col min-h-0 space-y-2">
                 <input type="text" id="tmSearchInput" placeholder="Filter roster list..." class="bg-midnight-input border yellow-border text-xs rounded-lg p-2 focus:outline-none w-full">
                 
@@ -391,7 +393,7 @@
                             </tr>
                         </thead>
                         <tbody id="tmTableBody" class="divide-y yellow-border">
-                            <!-- Dynamically generated -->
+                            <!-- Populated dynamically -->
                         </tbody>
                     </table>
                 </div>
@@ -412,7 +414,7 @@
                 </div>
                 <div>
                     <h3 class="text-lg font-black text-yellow-400">Import AUX Log Records</h3>
-                    <p class="text-xs text-slate-400">Copy and paste data directly from Excel, Google Sheets, or TSV format.</p>
+                    <p class="text-xs text-slate-400">Paste tab-delimited or spreadsheet tables directly below.</p>
                 </div>
             </div>
 
@@ -520,12 +522,12 @@
         function formatThresholdLabel(status, branch) {
             const sec = getMaxAllowedSeconds(status, branch);
             if (sec < 60) return `${sec}s`;
-            return `${Math.floor(sec / 60)} min`;
+            return `${Math.floor(sec / 60)}m`;
         }
 
         // --- 3. STATE & STORAGE ---
-        const STORAGE_KEY_DATA = 'AUX_DASHBOARD_DATA_EN_V2';
-        const STORAGE_KEY_MATES = 'AUX_DASHBOARD_MATES_V2';
+        const STORAGE_KEY_DATA = 'AUX_DASHBOARD_DATA_EN_V3';
+        const STORAGE_KEY_MATES = 'AUX_DASHBOARD_MATES_V3';
         
         let dbData = {};
         let selectedDate = new Date().toISOString().split('T')[0];
@@ -546,7 +548,7 @@
                 if (storedData) {
                     dbData = JSON.parse(storedData);
                 } else {
-                    dbData = generateDemoData();
+                    dbData = {};
                     saveStorage();
                 }
             } catch (e) {
@@ -557,20 +559,6 @@
         function saveStorage() {
             localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(dbData));
             localStorage.setItem(STORAGE_KEY_MATES, JSON.stringify(MATE_BRANCH_MAP));
-        }
-
-        function generateDemoData() {
-            const today = new Date().toISOString().split('T')[0];
-            return {
-                [today]: [
-                    { startedAt: `${today} 08:00:00`, endedAt: `${today} 09:12:00`, reason: "On lunch", mate: "Omar Jimenez", branch: "Mexico", durationSec: 4320, maxSec: 3600, isOffence: true, overtimeSec: 720 },
-                    { startedAt: `${today} 09:30:00`, endedAt: `${today} 09:48:00`, reason: "Restroom break", mate: "Kevin Williams", branch: "Panama", durationSec: 1080, maxSec: 600, isOffence: true, overtimeSec: 480 },
-                    { startedAt: `${today} 10:00:00`, endedAt: `${today} 10:00:30`, reason: "Call Wrap Up", mate: "MJ Rafols", branch: "Philippines", durationSec: 30, maxSec: 15, isOffence: true, overtimeSec: 15 },
-                    { startedAt: `${today} 11:00:00`, endedAt: `${today} 11:42:00`, reason: "On lunch", mate: "Benneth Smith", branch: "Panama", durationSec: 2520, maxSec: 1800, isOffence: true, overtimeSec: 720 },
-                    { startedAt: `${today} 12:00:00`, endedAt: `${today} 12:12:00`, reason: "On a break", mate: "Ariel Antonio Yaegui Mazate", branch: "Guatemala", durationSec: 720, maxSec: 900, isOffence: false, overtimeSec: 0 },
-                    { startedAt: `${today} 13:00:00`, endedAt: `${today} 13:30:00`, reason: "On a call", mate: "Shiyan Lee", branch: "Jamaica", durationSec: 1800, maxSec: 1200, isOffence: true, overtimeSec: 600 }
-                ]
-            };
         }
 
         // --- 4. HELPERS ---
@@ -719,7 +707,7 @@
             });
         }
 
-        // --- 6. CHARTS (YELLOW GRIDLINES & TOP 15 BRANCH OFFENDERS) ---
+        // --- 6. CHARTS ---
         function renderCharts(records) {
             // 1. Status Distribution
             const statusMap = {};
@@ -747,7 +735,7 @@
                 }
             });
 
-            // 2. Top 15 Branch Offenders (Overtime in Minutes)
+            // 2. Top 15 Branch Offenders
             const mateBranchOvertime = {};
             records.forEach(r => {
                 if (r.isOffence) {
@@ -784,11 +772,11 @@
                     scales: {
                         x: {
                             ticks: { color: '#FACC15', font: { size: 9 } },
-                            grid: { color: 'rgba(250, 204, 21, 0.2)' } // Yellow Gridlines
+                            grid: { color: 'rgba(250, 204, 21, 0.2)' }
                         },
                         y: {
                             ticks: { color: '#FACC15', font: { size: 10 } },
-                            grid: { color: 'rgba(250, 204, 21, 0.2)' } // Yellow Gridlines
+                            grid: { color: 'rgba(250, 204, 21, 0.2)' }
                         }
                     },
                     plugins: { legend: { display: false } }
