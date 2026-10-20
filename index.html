@@ -97,19 +97,27 @@
       <!-- Date Navigator & Action Controls -->
       <div class="flex flex-wrap items-center gap-3">
         
-        <!-- Date Navigator -->
-        <div class="flex items-center bg-midnight border-2 border-yellow-accent rounded-lg p-1 text-accentYellow">
-          <button id="prevDateBtn" class="p-2 hover:bg-yellow-500/20 rounded transition text-accentYellow" title="Previous Day">
-            <i data-lucide="chevron-left" class="w-5 h-5"></i>
-          </button>
-          
-          <div class="flex items-center gap-2 px-3">
-            <i data-lucide="calendar" class="w-5 h-5 text-accentYellow"></i>
-            <input type="date" id="datePicker" class="bg-transparent text-accentYellow font-bold border-none outline-none cursor-pointer focus:ring-0">
+        <!-- Date Navigator & Save Day Wrapper -->
+        <div class="flex flex-col items-stretch gap-1.5">
+          <div class="flex items-center bg-midnight border-2 border-yellow-accent rounded-lg p-1 text-accentYellow">
+            <button id="prevDateBtn" class="p-2 hover:bg-yellow-500/20 rounded transition text-accentYellow" title="Previous Day">
+              <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            </button>
+            
+            <div class="flex items-center gap-2 px-3">
+              <i data-lucide="calendar" class="w-5 h-5 text-accentYellow"></i>
+              <input type="date" id="datePicker" class="bg-transparent text-accentYellow font-bold border-none outline-none cursor-pointer focus:ring-0">
+            </div>
+
+            <button id="nextDateBtn" class="p-2 hover:bg-yellow-500/20 rounded transition text-accentYellow" title="Next Day">
+              <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
           </div>
 
-          <button id="nextDateBtn" class="p-2 hover:bg-yellow-500/20 rounded transition text-accentYellow" title="Next Day">
-            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+          <!-- Save Day Button -->
+          <button id="saveDayBtn" class="w-full flex items-center justify-center gap-1.5 px-3 py-1 bg-accentYellow text-midnight text-xs font-extrabold rounded-md hover:bg-yellow-400 transition shadow-sm">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            <span>Save Day</span>
           </button>
         </div>
 
@@ -586,11 +594,12 @@
       });
     }
 
-    // --- DATE CONTROLS ---
+    // --- DATE CONTROLS & SAVE DAY ---
     function setupDateControls() {
       const dateInput = document.getElementById('datePicker');
       const prevBtn = document.getElementById('prevDateBtn');
       const nextBtn = document.getElementById('nextDateBtn');
+      const saveDayBtn = document.getElementById('saveDayBtn');
 
       dateInput.addEventListener('change', (e) => {
         appState.selectedDate = e.target.value;
@@ -611,6 +620,12 @@
         appState.selectedDate = current.toISOString().split('T')[0];
         dateInput.value = appState.selectedDate;
         renderDashboard();
+      });
+
+      saveDayBtn.addEventListener('click', () => {
+        recalculateAllLimits();
+        saveStateToStorage();
+        alert(`Data for ${appState.selectedDate} saved successfully!`);
       });
     }
 
