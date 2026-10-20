@@ -493,6 +493,7 @@
           // Seed database with default roster if empty
           saveStateToStorage();
         }
+        recalculateAllLimits();
         populateBranchDropdown();
         renderDashboard();
         if (document.getElementById('teammatesModal') && !document.getElementById('teammatesModal').classList.contains('hidden')) {
@@ -515,19 +516,30 @@
 
     // --- THRESHOLD RULE ENGINE ---
     function getMaxLimitSeconds(awayReason, branch) {
-      const status = (awayReason || '').trim().toLowerCase();
+      const rawStatus = (awayReason || '').toLowerCase();
+      const statusClean = rawStatus.replace(/[^a-z]/g, '');
       const country = (branch || 'Guatemala').trim().toLowerCase();
 
-      if (status === 'call wrap up') return 15;
-      if (status === 'on a call') return 20 * 60;
-      if (status === 'restroom break') return 10 * 60;
-      if (status === 'on a break') return 15 * 60;
-      if (status === 'on lunch') {
+      if (statusClean.includes('wrap')) return 15;
+      if (rawStatus.includes('on a call') || statusClean === 'onacall') return 20 * 60;
+      if (rawStatus.includes('restroom') || statusClean.includes('restroom')) return 10 * 60;
+      if (rawStatus.includes('break') || statusClean.includes('break')) return 15 * 60;
+      if (rawStatus.includes('lunch') || statusClean.includes('lunch')) {
         if (country === 'panama') return 30 * 60;
         if (country === 'jamaica') return 45 * 60;
         return 60 * 60;
       }
       return 0;
+    }
+
+    function recalculateAllLimits() {
+      if (!appState.logs || appState.logs.length === 0) return;
+      appState.logs.forEach(l => {
+        const branch = l.branch || appState.roster[l.teammate] || 'Guatemala';
+        l.maxLimitSecs = getMaxLimitSeconds(l.awayReason, branch);
+        l.overtimeSecs = Math.max(0, l.durationSecs - l.maxLimitSecs);
+        l.isViolation = l.durationSecs > l.maxLimitSecs;
+      });
     }
 
     function formatDuration(seconds) {
@@ -798,6 +810,7 @@
       });
 
       if (parsedCount > 0) {
+        recalculateAllLimits();
         saveStateToStorage();
         document.getElementById('importRawData').value = '';
         document.getElementById('importModal').classList.add('hidden');
@@ -823,6 +836,7 @@
 
     // --- MAIN RENDER ENGINE ---
     function renderDashboard() {
+      recalculateAllLimits();
       const logsForDate = appState.logs.filter(l => l.date === appState.selectedDate);
       populateTableDropdowns(logsForDate);
 
@@ -876,7 +890,8 @@
       const grid = document.getElementById('topOffendersGrid');
 
       grid.innerHTML = statuses.map(status => {
-        const statusLogs = logs.filter(l => l.awayReason.toLowerCase() === status.toLowerCase());
+        const statusCleanTarget = status.replace(/[^a-z]/gi, '').toLowerCase();
+        const statusLogs = logs.filter(l => (l.awayReason || '').replace(/[^a-z]/gi, '').toLowerCase().includes(statusCleanTarget) || statusCleanTarget.includes((l.awayReason || '').replace(/[^a-z]/gi, '').toLowerCase()));
         const violations = statusLogs.filter(l => l.isViolation);
 
         const offenderMap = {};
