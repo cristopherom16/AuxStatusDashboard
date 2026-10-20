@@ -498,34 +498,43 @@
       logs: [],
       selectedDate: new Date().toISOString().split('T')[0],
       unlockedManagement: false,
+      isPendingSave: false
     };
 
     let auxChartInstance = null;
     let topOffendersChartInstance = null;
     let alertTimeout = null;
 
-    // Load local backup immediately on start to prevent flickering
+    // Pre-load local storage immediately on startup
     try {
       const localRoster = localStorage.getItem('aux_dashboard_roster');
       const localLogs = localStorage.getItem('aux_dashboard_logs');
       if (localRoster) appState.roster = JSON.parse(localRoster);
       if (localLogs) appState.logs = JSON.parse(localLogs);
     } catch(e) {
-      console.warn("LocalStorage initial parse error:", e);
+      console.warn("LocalStorage initial load error:", e);
     }
 
     // --- FIREBASE REALTIME SYNC ENGINE ---
     function initFirebaseSync() {
       const dbRef = database.ref('dashboard_data');
       
-      // Listen for remote changes in real-time
       dbRef.on('value', (snapshot) => {
+        // Prevent remote Firebase listener from replacing local pending unsaved import logs
+        if (appState.isPendingSave) return;
+
         const val = snapshot.val();
         if (val) {
           if (val.roster) appState.roster = val.roster;
-          if (val.logs) appState.logs = Array.isArray(val.logs) ? val.logs : Object.values(val.logs);
+          if (val.logs) {
+            const remoteLogs = Array.isArray(val.logs) ? val.logs : Object.values(val.logs);
+            // Merge remote logs with existing local logs by unique id
+            const logMap = new Map();
+            appState.logs.forEach(l => logMap.set(l.id, l));
+            remoteLogs.forEach(l => logMap.set(l.id, l));
+            appState.logs = Array.from(logMap.values());
+          }
         } else {
-          // Seed database with default roster if empty
           saveStateToStorage();
         }
         recalculateAllLimits();
@@ -538,20 +547,25 @@
     }
 
     function saveStateToStorage() {
-      // Local backup first
+      // 1. Save to LocalStorage immediately
       try {
         localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
         localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
       } catch(e) {
-        console.warn("LocalStorage write error:", e);
+        console.warn("LocalStorage error:", e);
       }
 
-      // Sync to Firebase
+      // 2. Clear pending status flag
+      appState.isPendingSave = false;
+
+      // 3. Force direct update to Firebase RTDB
       return database.ref('dashboard_data').set({
         roster: appState.roster,
         logs: appState.logs,
         lastUpdated: Date.now()
-      }).catch(err => console.error("Firebase write error:", err));
+      }).catch(err => {
+        console.error("Firebase write error:", err);
+      });
     }
 
     // --- THRESHOLD RULE ENGINE ---
@@ -645,7 +659,6 @@
       }
       lucide.createIcons();
 
-      // Mostrar modal animado
       modal.classList.remove('opacity-0', 'translate-y-[-20px]');
       modal.classList.add('opacity-100', 'translate-y-0');
 
@@ -704,11 +717,7 @@
           return;
         }
 
-        // Merge day logs explicitly into appState.logs
-        const otherLogs = appState.logs.filter(l => l.date !== appState.selectedDate);
-        appState.logs = [...otherLogs, ...dayLogs];
-
-        // Persist to LocalStorage and Firebase
+        // Commit state directly
         saveStateToStorage();
 
         // Launch confirmation banner
@@ -873,6 +882,7 @@
 
       const lines = rawText.split(/\r?\n/);
       let parsedCount = 0;
+      let firstImportedDate = null;
 
       lines.forEach(line => {
         const cols = line.split('\t').map(c => c.trim().replace(/^"|"$/g, ''));
@@ -890,11 +900,13 @@
           if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
             const durationSecs = Math.max(0, Math.round((endDate - startDate) / 1000));
             const dateKey = startDate.toISOString().split('T')[0];
+            if (!firstImportedDate) firstImportedDate = dateKey;
+
             const branch = appState.roster[teammate] || 'Guatemala';
             const maxSecs = getMaxLimitSeconds(awayReason, branch);
 
             appState.logs.push({
-              id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+              id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
               date: dateKey,
               teammate,
               branch,
@@ -912,12 +924,23 @@
       });
 
       if (parsedCount > 0) {
+        if (firstImportedDate) {
+          appState.selectedDate = firstImportedDate;
+          document.getElementById('datePicker').value = firstImportedDate;
+        }
+
+        appState.isPendingSave = true;
         recalculateAllLimits();
-        saveStateToStorage();
+        
+        // Save immediately locally so switching tabs doesn't wipe imported data
+        try {
+          localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
+        } catch(e) {}
+
         document.getElementById('importRawData').value = '';
         document.getElementById('importModal').classList.add('hidden');
         renderDashboard();
-        triggerSaveDayAlert('Data Imported!', `${parsedCount} records parsed and added. Click "Save Day" to finalize.`, true);
+        triggerSaveDayAlert('Data Imported!', `${parsedCount} records added for ${appState.selectedDate}. Click "Save Day" to sync to Firebase.`, true);
       } else {
         alert('Could not parse rows. Please check tab-separated column format.');
       }
