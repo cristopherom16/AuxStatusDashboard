@@ -305,7 +305,7 @@
 
   </div>
 
-  <!-- NOTIFICACIÓN EMERGENTE AL GUARDAR DÍA (SAVE DAY TOAST ALERT MODAL) -->
+  <!-- NOTIFICACIÓN EMERGENTE AL GUARDAR DÍA -->
   <div id="saveDayAlertModal" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none opacity-0 translate-y-[-20px]">
     <div class="bg-midnightCard border-2 border-yellow-accent rounded-xl p-4 shadow-2xl shadow-yellow-500/30 flex items-center gap-4 min-w-[320px] max-w-md pointer-events-auto">
       <div id="saveAlertIconContainer" class="p-3 bg-green-500/20 rounded-xl border border-green-500 text-green-400">
@@ -424,7 +424,7 @@
 
       <p class="text-xs text-slate-300">
         Paste raw tab-separated rows from Excel/Sheets with the following required columns:<br>
-        <code class="text-accentYellow">Period started at (America/Chicago) | Period ended at (America/Chicago) | Away reason | Teammate</code>
+        <code class="text-accentYellow">Period started at | Period ended at | Away reason | Teammate</code>
       </p>
 
       <textarea id="importRawData" rows="8" placeholder="Paste copied data here..." class="w-full bg-midnight text-slate-100 font-mono text-xs border border-yellow-accent rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-accentYellow"></textarea>
@@ -441,7 +441,7 @@
 
   <!-- SCRIPT IMPLEMENTATION WITH FIREBASE INTEGRATION -->
   <script>
-    // --- FIREBASE CONFIGURATION & INITIALIZATION ---
+    // --- FIREBASE CONFIGURATION ---
     const firebaseConfig = {
       apiKey: "AIzaSyAUkhxAp6cR2_78FTS1g66WCF8ZkUmXYU4",
       authDomain: "auxstatusdashboard.firebaseapp.com",
@@ -450,13 +450,18 @@
       storageBucket: "auxstatusdashboard.firebasestorage.app",
       messagingSenderId: "993372406272",
       appId: "1:993372406272:web:e61ae859c6a3668de58ee5",
-      measurementId: "G-QGBQFQX5Z2"
+      measurementId: "G-QGBQFQFQX5Z2"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+    let database = null;
+    try {
+      firebase.initializeApp(firebaseConfig);
+      database = firebase.database();
+    } catch(err) {
+      console.warn("Firebase Init notice:", err);
+    }
 
-    // Helper function to extract local date key (YYYY-MM-DD) without UTC timezone shift
+    // Helper to extract YYYY-MM-DD local string
     function getLocalDateKey(dateObj) {
       if (!dateObj || isNaN(dateObj.getTime())) return new Date().toISOString().split('T')[0];
       const yyyy = dateObj.getFullYear();
@@ -465,16 +470,14 @@
       return `${yyyy}-${mm}-${dd}`;
     }
 
-    // Flexible date parser for Excel/Sheets raw paste
+    // Flexible date parser for Excel/Sheets tabbed rows
     function parseFlexibleDate(str) {
       if (!str) return null;
       let clean = str.trim().replace(/"/g, '');
       
-      // Try standard JS date parse
       let d = new Date(clean);
       if (!isNaN(d.getTime())) return d;
 
-      // Handle custom formats like DD/MM/YYYY HH:MM:SS or MM/DD/YYYY
       const parts = clean.split(/[\s,]+/);
       if (parts.length >= 1) {
         const dateParts = parts[0].split(/[\/\-\.]/);
@@ -484,12 +487,14 @@
           let p3 = parseInt(dateParts[2], 10);
 
           let year, month, day;
-          if (p1 > 1000) { // YYYY-MM-DD
-            year = p1; month = p2 - 1; day = p3;
-          } else if (p3 > 1000) { // MM/DD/YYYY or DD/MM/YYYY
+          if (p1 > 1000) { year = p1; month = p2 - 1; day = p3; }
+          else if (p3 > 1000) {
             year = p3;
-            if (p1 > 12) { day = p1; month = p2 - 1; } // DD/MM/YYYY
-            else { month = p1 - 1; day = p2; } // MM/DD/YYYY
+            if (p1 > 12) { day = p1; month = p2 - 1; }
+            else { month = p1 - 1; day = p2; }
+          } else {
+            year = p3 < 100 ? 2000 + p3 : p3;
+            month = p1 - 1; day = p2;
           }
 
           let timeStr = parts.slice(1).join(' ');
@@ -558,21 +563,23 @@
     let topOffendersChartInstance = null;
     let alertTimeout = null;
 
-    // Load LocalStorage immediately on startup
-    try {
-      const localRoster = localStorage.getItem('aux_dashboard_roster');
-      const localLogs = localStorage.getItem('aux_dashboard_logs');
-      const localDate = localStorage.getItem('aux_dashboard_selected_date');
-      
-      if (localRoster) appState.roster = JSON.parse(localRoster);
-      if (localLogs) {
-        const parsed = JSON.parse(localLogs);
-        if (Array.isArray(parsed)) appState.logs = parsed;
+    // Load LocalStorage immediately synchronously
+    (function loadLocalStorageData() {
+      try {
+        const localRoster = localStorage.getItem('aux_dashboard_roster');
+        const localLogs = localStorage.getItem('aux_dashboard_logs');
+        const localDate = localStorage.getItem('aux_dashboard_selected_date');
+        
+        if (localRoster) appState.roster = JSON.parse(localRoster);
+        if (localLogs) {
+          const parsed = JSON.parse(localLogs);
+          if (Array.isArray(parsed)) appState.logs = parsed;
+        }
+        if (localDate) appState.selectedDate = localDate;
+      } catch(e) {
+        console.warn("LocalStorage initial load notice:", e);
       }
-      if (localDate) appState.selectedDate = localDate;
-    } catch(e) {
-      console.warn("LocalStorage initial load error:", e);
-    }
+    })();
 
     function resetActiveSearchFilters() {
       document.getElementById('searchTeammate').value = '';
@@ -582,8 +589,31 @@
       document.getElementById('tableColFilterStatus').value = 'ALL';
     }
 
+    function saveStateToStorage() {
+      // Direct LocalStorage sync save
+      try {
+        localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
+        localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
+        localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
+      } catch(e) {
+        console.warn("LocalStorage error:", e);
+      }
+
+      // Background Firebase save
+      if (database) {
+        database.ref('dashboard_data').set({
+          roster: appState.roster,
+          logs: appState.logs,
+          lastUpdated: Date.now()
+        }).catch(err => {
+          console.warn("Firebase write notice:", err);
+        });
+      }
+    }
+
     // --- FIREBASE REALTIME SYNC ENGINE ---
     function initFirebaseSync() {
+      if (!database) return;
       const dbRef = database.ref('dashboard_data');
       
       dbRef.on('value', (snapshot) => {
@@ -595,7 +625,6 @@
           if (val.logs) {
             const remoteLogs = Array.isArray(val.logs) ? val.logs : Object.values(val.logs);
             
-            // Merge local and remote logs using unique IDs so local entries are never lost
             const logMap = new Map();
             appState.logs.forEach(l => { 
               if (l) {
@@ -614,11 +643,8 @@
             
             appState.logs = Array.from(logMap.values());
           }
-        } else if (appState.logs.length > 0) {
-          saveStateToStorage();
         }
 
-        // Persist back to LocalStorage
         try {
           localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
           localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
@@ -627,29 +653,8 @@
         recalculateAllLimits();
         populateBranchDropdown();
         renderDashboard();
-        if (document.getElementById('teammatesModal') && !document.getElementById('teammatesModal').classList.contains('hidden')) {
-          renderRosterTable();
-        }
-      });
-    }
-
-    function saveStateToStorage() {
-      // 1. Synchronously save roster, logs, and selectedDate to LocalStorage
-      try {
-        localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
-        localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
-        localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
-      } catch(e) {
-        console.warn("LocalStorage error:", e);
-      }
-
-      // 2. Direct sync write to Firebase RTDB
-      return database.ref('dashboard_data').set({
-        roster: appState.roster,
-        logs: appState.logs,
-        lastUpdated: Date.now()
-      }).catch(err => {
-        console.error("Firebase write error:", err);
+      }, (err) => {
+        console.warn("Firebase listener warning:", err);
       });
     }
 
@@ -726,7 +731,6 @@
       });
     }
 
-    // --- FUNCIÓN PARA MOSTRAR ALERTA EMERGENTE GRANDE (TOAST MODAL) ---
     function triggerSaveDayAlert(title, message, isSuccess = true) {
       const modal = document.getElementById('saveDayAlertModal');
       const titleEl = document.getElementById('saveAlertTitle');
@@ -770,7 +774,7 @@
 
       dateInput.addEventListener('change', (e) => {
         appState.selectedDate = e.target.value;
-        localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
+        saveStateToStorage();
         resetActiveSearchFilters();
         renderDashboard();
       });
@@ -781,7 +785,7 @@
         current.setDate(current.getDate() - 1);
         appState.selectedDate = getLocalDateKey(current);
         dateInput.value = appState.selectedDate;
-        localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
+        saveStateToStorage();
         resetActiveSearchFilters();
         renderDashboard();
       });
@@ -792,7 +796,7 @@
         current.setDate(current.getDate() + 1);
         appState.selectedDate = getLocalDateKey(current);
         dateInput.value = appState.selectedDate;
-        localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
+        saveStateToStorage();
         resetActiveSearchFilters();
         renderDashboard();
       });
@@ -811,9 +815,7 @@
           return;
         }
 
-        // Save immediately locally and sync to Firebase
         saveStateToStorage();
-
         triggerSaveDayAlert('Day Saved Successfully!', `${dayLogs.length} records saved for ${appState.selectedDate}`, true);
       });
     }
@@ -989,7 +991,6 @@
           if (startDate && endDate) {
             const durationSecs = Math.max(0, Math.round((endDate.getTime() - startDate.getTime()) / 1000));
             
-            // Extract exact local YYYY-MM-DD date key
             const dateKey = getLocalDateKey(startDate);
             if (!firstImportedDate) firstImportedDate = dateKey;
 
@@ -1031,7 +1032,7 @@
         renderDashboard();
         triggerSaveDayAlert('Data Imported & Saved!', `${parsedCount} records saved for ${appState.selectedDate}.`, true);
       } else {
-        alert('Could not parse rows. Please check tab-separated column format.');
+        alert('Could not parse rows. Please verify tab-separated data format.');
       }
     }
 
