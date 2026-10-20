@@ -46,13 +46,26 @@
       background: #facc15;
     }
 
+    /* Light Mode Overrides */
+    html:not(.dark) body {
+      background-color: #f8fafc !important;
+      color: #0f172a !important;
+    }
+    html:not(.dark) .bg-midnight {
+      background-color: #f1f5f9 !important;
+    }
+    html:not(.dark) .bg-midnightCard {
+      background-color: #ffffff !important;
+    }
+    html:not(.dark) .text-slate-100,
+    html:not(.dark) .text-slate-200,
+    html:not(.dark) .text-slate-300 {
+      color: #1e293b !important;
+    }
+
     /* Yellow Gridlines and Border Accents */
     .border-yellow-accent {
       border-color: #facc15 !important;
-    }
-    
-    .grid-yellow-cell {
-      border: 1px solid #facc15 !important;
     }
   </style>
 </head>
@@ -429,7 +442,7 @@
     // --- APPLICATION STATE ---
     let appState = {
       roster: { ...DEFAULT_ROSTER },
-      logs: [], // Array of parsed records stored locally
+      logs: [],
       selectedDate: new Date().toISOString().split('T')[0],
       unlockedManagement: false,
     };
@@ -461,13 +474,13 @@
       const country = (branch || 'Guatemala').trim();
 
       if (status === 'Call Wrap Up') return 15;
-      if (status === 'On a call') return 20 * 60; // 1200s
-      if (status === 'Restroom break') return 10 * 60; // 600s
-      if (status === 'On a break') return 15 * 60; // 900s
+      if (status === 'On a call') return 20 * 60;
+      if (status === 'Restroom break') return 10 * 60;
+      if (status === 'On a break') return 15 * 60;
       if (status === 'On lunch') {
-        if (country === 'Panama') return 30 * 60; // 1800s
-        if (country === 'Jamaica') return 45 * 60; // 2700s
-        return 60 * 60; // 3600s for Guatemala, Colombia, Philippines, USA, Mexico
+        if (country === 'Panama') return 30 * 60;
+        if (country === 'Jamaica') return 45 * 60;
+        return 60 * 60;
       }
       return 0;
     }
@@ -484,11 +497,9 @@
       loadStateFromStorage();
       lucide.createIcons();
 
-      // Initialize Date Picker to Today
       const dateInput = document.getElementById('datePicker');
       dateInput.value = appState.selectedDate;
 
-      // Event Listeners
       setupThemeToggle();
       setupDateControls();
       setupModals();
@@ -498,21 +509,22 @@
       renderDashboard();
     });
 
-    // --- THEME TOGGLE (SUN/MOON FIXED BOTTOM-LEFT) ---
+    // --- WORKING THEME TOGGLE (SUN / MOON) ---
     function setupThemeToggle() {
       const toggleBtn = document.getElementById('themeToggleBtn');
       const sunIcon = document.getElementById('themeIconSun');
       const moonIcon = document.getElementById('themeIconMoon');
 
       toggleBtn.addEventListener('click', () => {
-        document.documentElement.classList.toggle('dark');
-        const isDark = document.documentElement.classList.contains('dark');
-        if (isDark) {
+        const html = document.documentElement;
+        if (html.classList.contains('dark')) {
+          html.classList.remove('dark');
+          sunIcon.classList.remove('hidden');
+          moonIcon.classList.add('hidden');
+        } else {
+          html.classList.add('dark');
           sunIcon.classList.add('hidden');
           moonIcon.classList.remove('hidden');
-        } else {
-          moonIcon.classList.add('hidden');
-          sunIcon.classList.remove('hidden');
         }
         renderCharts();
       });
@@ -562,7 +574,7 @@
         }
       });
 
-      // Password Submit
+      // Password Submit (PASSWORD: management2026!)
       document.getElementById('passwordForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const pwd = document.getElementById('passwordInput').value;
@@ -652,7 +664,6 @@
           const awayReason = cols[2];
           const teammate = cols[3];
 
-          // Skip Header Line
           if (startStr.toLowerCase().includes('period started')) return;
 
           const startDate = new Date(startStr);
@@ -698,7 +709,6 @@
       const statusVal = document.getElementById('statusFilter').value;
       const searchVal = document.getElementById('searchTeammate').value.toLowerCase().trim();
 
-      // Filter Logs for Selected Date & Criteria
       const filteredLogs = appState.logs.filter(log => {
         if (log.date !== appState.selectedDate) return false;
         if (branchVal !== 'ALL' && log.branch !== branchVal) return false;
@@ -730,7 +740,6 @@
       document.getElementById('statTotalViolations').textContent = violations.length;
       document.getElementById('statTotalOvertime').textContent = `+${Math.round(totalOvertimeSecs / 60)} min overtime`;
 
-      // Overall Top Offender
       const offenderMap = {};
       violations.forEach(l => {
         offenderMap[l.teammate] = (offenderMap[l.teammate] || 0) + l.overtimeSecs;
@@ -839,13 +848,12 @@
       `).join('');
     }
 
-    // --- CHARTS (WITH YELLOW GRIDLINES & ACCENTS) ---
+    // --- CHARTS ---
     function renderCharts(logs = []) {
       const isDark = document.documentElement.classList.contains('dark');
-      const textColor = isDark ? '#FACC15' : '#1E293B';
-      const gridColor = 'rgba(250, 204, 21, 0.25)'; // Yellow Gridlines
+      const textColor = isDark ? '#FACC15' : '#0F172A';
+      const gridColor = 'rgba(250, 204, 21, 0.25)';
 
-      // 1. AUX Distribution Chart
       const statusTotals = {};
       logs.forEach(l => {
         statusTotals[l.awayReason] = (statusTotals[l.awayReason] || 0) + Math.round(l.durationSecs / 60);
@@ -874,7 +882,6 @@
         }
       });
 
-      // 2. Top 15 Branch Offenders Chart
       const offenderBranchMap = {};
       logs.filter(l => l.isViolation).forEach(l => {
         const key = `${l.teammate} (${l.branch})`;
