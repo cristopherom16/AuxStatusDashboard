@@ -115,7 +115,7 @@
           </div>
 
           <!-- Save Day Button -->
-          <button id="saveDayBtn" class="w-full flex items-center justify-center gap-1.5 px-3 py-1 bg-accentYellow text-midnight text-xs font-extrabold rounded-md hover:bg-yellow-400 transition shadow-sm">
+          <button id="saveDayBtn" type="button" class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-accentYellow text-midnight text-xs font-black rounded-md hover:bg-yellow-400 active:scale-95 transition shadow-sm cursor-pointer z-10">
             <i data-lucide="save" class="w-3.5 h-3.5"></i>
             <span>Save Day</span>
           </button>
@@ -306,9 +306,9 @@
 
   </div>
 
-  <!-- NOTIFICACIÓN EMERGENTE AL GUARDAR DÍA (SAVE DAY ALERT MODAL) -->
+  <!-- NOTIFICACIÓN EMERGENTE AL GUARDAR DÍA (SAVE DAY TOAST ALERT MODAL) -->
   <div id="saveDayAlertModal" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none opacity-0 translate-y-[-20px]">
-    <div class="bg-midnightCard border-2 border-yellow-accent rounded-xl p-4 shadow-2xl shadow-yellow-500/20 flex items-center gap-4 min-w-[320px] max-w-md pointer-events-auto">
+    <div class="bg-midnightCard border-2 border-yellow-accent rounded-xl p-4 shadow-2xl shadow-yellow-500/30 flex items-center gap-4 min-w-[320px] max-w-md pointer-events-auto">
       <div id="saveAlertIconContainer" class="p-3 bg-green-500/20 rounded-xl border border-green-500 text-green-400">
         <i data-lucide="check-circle-2" class="w-8 h-8"></i>
       </div>
@@ -316,7 +316,7 @@
         <h4 id="saveAlertTitle" class="text-md font-black text-accentYellow uppercase tracking-wider">Day Saved!</h4>
         <p id="saveAlertMessage" class="text-xs text-slate-300 font-medium mt-0.5">Data saved for date</p>
       </div>
-      <button id="closeSaveAlertBtn" class="text-slate-400 hover:text-white p-1">
+      <button id="closeSaveAlertBtn" type="button" class="text-slate-400 hover:text-white p-1">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
@@ -504,6 +504,16 @@
     let topOffendersChartInstance = null;
     let alertTimeout = null;
 
+    // Load local backup immediately on start to prevent flickering
+    try {
+      const localRoster = localStorage.getItem('aux_dashboard_roster');
+      const localLogs = localStorage.getItem('aux_dashboard_logs');
+      if (localRoster) appState.roster = JSON.parse(localRoster);
+      if (localLogs) appState.logs = JSON.parse(localLogs);
+    } catch(e) {
+      console.warn("LocalStorage initial parse error:", e);
+    }
+
     // --- FIREBASE REALTIME SYNC ENGINE ---
     function initFirebaseSync() {
       const dbRef = database.ref('dashboard_data');
@@ -528,15 +538,20 @@
     }
 
     function saveStateToStorage() {
-      database.ref('dashboard_data').set({
+      // Local backup first
+      try {
+        localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
+        localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
+      } catch(e) {
+        console.warn("LocalStorage write error:", e);
+      }
+
+      // Sync to Firebase
+      return database.ref('dashboard_data').set({
         roster: appState.roster,
         logs: appState.logs,
         lastUpdated: Date.now()
       }).catch(err => console.error("Firebase write error:", err));
-      
-      // Local backup
-      localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
-      localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
     }
 
     // --- THRESHOLD RULE ENGINE ---
@@ -611,7 +626,7 @@
       });
     }
 
-    // --- FUNCIÓN PARA MOSTRAR ALERTA EMERGENTE GRANDE ---
+    // --- FUNCIÓN PARA MOSTRAR ALERTA EMERGENTE GRANDE (TOAST MODAL) ---
     function triggerSaveDayAlert(title, message, isSuccess = true) {
       const modal = document.getElementById('saveDayAlertModal');
       const titleEl = document.getElementById('saveAlertTitle');
@@ -630,14 +645,14 @@
       }
       lucide.createIcons();
 
-      // Mostrar modal
+      // Mostrar modal animado
       modal.classList.remove('opacity-0', 'translate-y-[-20px]');
       modal.classList.add('opacity-100', 'translate-y-0');
 
       if (alertTimeout) clearTimeout(alertTimeout);
       alertTimeout = setTimeout(() => {
         hideSaveDayAlert();
-      }, 2500);
+      }, 3000);
     }
 
     function hideSaveDayAlert() {
@@ -677,23 +692,26 @@
 
       closeAlertBtn.addEventListener('click', hideSaveDayAlert);
 
-      // ACCIÓN DE GUARDAR DÍA PERSISTENTE Y NOTIFICACIÓN GRANDE
-      saveDayBtn.addEventListener('click', () => {
+      // SAVE DAY BUTTON CLICK HANDLER
+      saveDayBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         recalculateAllLimits();
         
         const dayLogs = appState.logs.filter(l => l.date === appState.selectedDate);
 
-        if (dayLogs.length === 0) {
-          triggerSaveDayAlert('No Data Found', `No logs imported for ${appState.selectedDate}. Import data first!`, false);
+        if (!dayLogs || dayLogs.length === 0) {
+          triggerSaveDayAlert('No Logs Found', `There are no AUX records to save for ${appState.selectedDate}. Import data first!`, false);
           return;
         }
 
+        // Merge day logs explicitly into appState.logs
         const otherLogs = appState.logs.filter(l => l.date !== appState.selectedDate);
         appState.logs = [...otherLogs, ...dayLogs];
 
+        // Persist to LocalStorage and Firebase
         saveStateToStorage();
 
-        // Lanzar notificación emergente
+        // Launch confirmation banner
         triggerSaveDayAlert('Day Saved Successfully!', `${dayLogs.length} records saved for ${appState.selectedDate}`, true);
       });
     }
@@ -899,6 +917,7 @@
         document.getElementById('importRawData').value = '';
         document.getElementById('importModal').classList.add('hidden');
         renderDashboard();
+        triggerSaveDayAlert('Data Imported!', `${parsedCount} records parsed and added. Click "Save Day" to finalize.`, true);
       } else {
         alert('Could not parse rows. Please check tab-separated column format.');
       }
