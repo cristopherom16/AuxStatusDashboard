@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AUX STATUS DASHBOARD</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            midnight: '#090D16',
+                            cardDark: '#0F172A',
+                            yellow: '#FACC15',
+                            yellowHover: '#EAB308',
+                            blue: '#0284C7',
+                            red: '#EF4444',
+                            green: '#10B981'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Base Dark/Light Theme Settings */
+        html.dark body {
+            background-color: #090D16;
+            color: #F8FAFC;
+        }
+        html.dark .bg-midnight-card {
+            background-color: #0F172A;
+        }
+        html.dark .bg-midnight-input {
+            background-color: #090D16;
+        }
+
+        html:not(.dark) body {
+            background-color: #F8FAFC;
+            color: #0F172A;
+        }
+        html:not(.dark) .bg-midnight-card {
+            background-color: #FFFFFF;
+        }
+        html:not(.dark) .bg-midnight-input {
+            background-color: #F1F5F9;
+        }
+
+        /* 10mm Side Margins Implementation */
+        .px-10mm {
+            padding-left: 10mm;
+            padding-right: 10mm;
+        }
+
+        /* Yellow Borders Override across UI */
+        .yellow-border {
+            border-color: rgba(250, 204, 21, 0.4) !important;
+        }
+        .yellow-border-strong {
+            border-color: #FACC15 !important;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FACC15;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased transition-colors duration-200 pb-16">
+
+    <!-- TOP HEADER -->
+    <header class="bg-midnight-card border-b yellow-border sticky top-0 z-30 px-10mm py-4 shadow-xl">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            
+            <!-- BRANDING & TITLE -->
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-yellow-400/10 border yellow-border rounded-xl text-yellow-400 shadow-inner flex items-center justify-center">
+                    <!-- Alarm / Stopwatch Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FACC15" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-timer animate-pulse">
+                        <line x1="10" x2="14" y1="2" y2="2"/>
+                        <line x1="12" x2="15" y1="14" y2="11"/>
+                        <circle cx="12" cy="14" r="8"/>
+                    </svg>
+                </div>
+                <div>
+                    <!-- Title with AUX and DASHBOARD both in bright yellow -->
+                    <h1 class="text-2xl font-black tracking-wider text-yellow-400 flex items-center gap-2">
+                        AUX STATUS DASHBOARD
+                    </h1>
+                    <p class="text-xs text-slate-400 font-medium">Operations Compliance & Real-time Overtime Tracking</p>
+                </div>
+            </div>
+
+            <!-- CONTROLS & DATE NAVIGATOR -->
+            <div class="flex flex-wrap items-center gap-3">
+                
+                <!-- Date Selector with Yellow Icons and Arrows -->
+                <div class="flex items-center bg-midnight-input border yellow-border rounded-lg p-1 shadow-inner">
+                    <button id="btnPrevDay" title="Previous Day" class="p-1.5 text-yellow-400 hover:scale-110 transition">
+                        <i data-lucide="chevron-left" class="w-5 h-5 text-yellow-400"></i>
+                    </button>
+                    <div class="flex items-center px-2 space-x-2">
+                        <i data-lucide="calendar" class="w-4 h-4 text-yellow-400"></i>
+                        <input type="date" id="datePicker" class="bg-transparent text-sm font-bold text-yellow-400 focus:outline-none cursor-pointer">
+                    </div>
+                    <button id="btnNextDay" title="Next Day" class="p-1.5 text-yellow-400 hover:scale-110 transition">
+                        <i data-lucide="chevron-right" class="w-5 h-5 text-yellow-400"></i>
+                    </button>
+                </div>
+
+                <!-- Teammates CRUD Button -->
+                <button id="openTeammatesBtn" class="flex items-center gap-2 bg-midnight-input hover:bg-yellow-400/10 border yellow-border text-yellow-400 font-bold px-3.5 py-2 rounded-lg transition text-sm">
+                    <i data-lucide="users" class="w-4 h-4 text-yellow-400"></i>
+                    <span>Manage Teammates</span>
+                </button>
+
+                <!-- Import Button -->
+                <button id="openImportBtn" class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black px-4 py-2 rounded-lg transition shadow-lg shadow-yellow-400/20 text-sm">
+                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                    <span>Import Data</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER WITH 10mm PADDING -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-10mm py-6 space-y-6">
+
+        <!-- FILTERS BAR -->
+        <div class="bg-midnight-card border yellow-border rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-md">
+            <div class="flex items-center gap-2 text-yellow-400 font-bold text-sm">
+                <i data-lucide="filter" class="w-4 h-4 text-yellow-400"></i>
+                <span>Active Filters:</span>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1 max-w-3xl">
+                <!-- Branch Filter -->
+                <select id="filterBranch" class="bg-midnight-input border yellow-border text-xs rounded-lg p-2.5 focus:border-yellow-400 focus:outline-none">
+                    <option value="ALL">All Branches / Countries</option>
+                    <option value="Guatemala">Guatemala</option>
+                    <option value="Panama">Panama</option>
+                    <option value="Mexico">Mexico</option>
+                    <option value="Jamaica">Jamaica</option>
+                    <option value="Philippines">Philippines</option>
+                    <option value="Colombia">Colombia</option>
+                    <option value="USA">USA</option>
+                </select>
+
+                <!-- Status Filter -->
+                <select id="filterStatus" class="bg-midnight-input border yellow-border text-xs rounded-lg p-2.5 focus:border-yellow-400 focus:outline-none">
+                    <option value="ALL">All Statuses (Away Reason)</option>
+                    <option value="On lunch">On lunch</option>
+                    <option value="Restroom break">Restroom break</option>
+                    <option value="On a break">On a break</option>
+                    <option value="Call Wrap Up">Call Wrap Up</option>
+                    <option value="On a call">On a call</option>
+                </select>
+
+                <!-- Search Input -->
+                <div class="relative">
+                    <input type="text" id="filterSearch" placeholder="Search Teammate..." class="w-full bg-midnight-input border yellow-border text-xs rounded-lg p-2.5 pl-8 focus:border-yellow-400 focus:outline-none">
+                    <i data-lucide="search" class="w-4 h-4 text-yellow-400 absolute left-2.5 top-3"></i>
+                </div>
+            </div>
+
+            <button id="btnResetFilters" class="text-xs text-yellow-400 hover:underline font-semibold transition">
+                Reset Filters
+            </button>
+        </div>
+
+        <!-- KPI STAT CARDS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- KPI 1 -->
+            <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex items-center justify-between relative overflow-hidden">
+                <div class="space-y-1 z-10">
+                    <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Total Records</p>
+                    <h3 id="kpiTotalRecords" class="text-3xl font-black text-yellow-400">0</h3>
+                    <p id="kpiActiveTeammates" class="text-xs text-slate-400">0 Active Teammates</p>
+                </div>
+                <div class="p-3 bg-yellow-400/10 text-yellow-400 rounded-xl border yellow-border">
+                    <i data-lucide="users" class="w-7 h-7"></i>
+                </div>
+            </div>
+
+            <!-- KPI 2 -->
+            <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex items-center justify-between relative overflow-hidden">
+                <div class="space-y-1 z-10">
+                    <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Total AUX Time</p>
+                    <h3 id="kpiTotalTime" class="text-3xl font-black text-yellow-400">0h 0m</h3>
+                    <p class="text-xs text-slate-400">Logged today</p>
+                </div>
+                <div class="p-3 bg-yellow-400/10 text-yellow-400 rounded-xl border yellow-border">
+                    <i data-lucide="clock" class="w-7 h-7"></i>
+                </div>
+            </div>
+
+            <!-- KPI 3 -->
+            <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex items-center justify-between relative overflow-hidden">
+                <div class="space-y-1 z-10">
+                    <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Threshold Violations</p>
+                    <h3 id="kpiTotalOffences" class="text-3xl font-black text-red-500">0</h3>
+                    <p id="kpiOvertimeTotal" class="text-xs text-yellow-400 font-bold">+0 min overtime</p>
+                </div>
+                <div class="p-3 bg-red-500/10 text-red-400 rounded-xl border border-red-500/30">
+                    <i data-lucide="alert-triangle" class="w-7 h-7"></i>
+                </div>
+            </div>
+
+            <!-- KPI 4 -->
+            <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex items-center justify-between relative overflow-hidden">
+                <div class="space-y-1 z-10">
+                    <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Top Overall Offender</p>
+                    <h3 id="kpiTopOffenderName" class="text-lg font-extrabold text-red-400 truncate max-w-[150px]">N/A</h3>
+                    <p id="kpiTopOffenderDetails" class="text-xs text-slate-400">0 violations</p>
+                </div>
+                <div class="p-3 bg-red-500/10 text-red-400 rounded-xl border border-red-500/30">
+                    <i data-lucide="user-x" class="w-7 h-7"></i>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TOP OFFENDERS BY STATUS CARDS SECTION -->
+        <div>
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-black text-yellow-400 flex items-center gap-2">
+                    <i data-lucide="shield-alert" class="w-5 h-5 text-yellow-400"></i>
+                    TOP OFFENDERS BY STATUS
+                </h2>
+                <span class="text-xs text-slate-400 font-medium">Highest overtime offenders per status category</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" id="topOffendersGrid">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+
+        <!-- CHARTS SECTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Chart 1: Time distribution by Reason -->
+            <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex flex-col">
+                <h3 class="text-sm font-black text-yellow-400 mb-4 flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-yellow-400"></i>
+                    AUX Time Distribution
+                </h3>
+                <div class="flex-1 relative min-h-[240px] flex items-center justify-center">
+                    <canvas id="chartStatusDist"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: Top 15 Branch Offenders (Overtime) -->
+            <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex flex-col lg:col-span-2">
+                <h3 class="text-sm font-black text-yellow-400 mb-4 flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-yellow-400"></i>
+                    Top 15 Branch Offenders (Overtime in Minutes)
+                </h3>
+                <div class="flex-1 relative min-h-[240px] flex items-center justify-center">
+                    <canvas id="chartTop15BranchOffenders"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- DATA TABLE SECTION -->
+        <div class="bg-midnight-card border yellow-border rounded-xl shadow-md overflow-hidden">
+            <div class="p-4 border-b yellow-border flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="list" class="w-5 h-5 text-yellow-400"></i>
+                    <h3 class="text-md font-black text-yellow-400">Detailed Activity Logs</h3>
+                    <span id="tableRecordCount" class="bg-midnight-input border yellow-border text-yellow-400 text-xs px-2.5 py-0.5 rounded-full font-mono font-bold">0</span>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <button id="btnExportCSV" class="text-xs bg-midnight-input hover:bg-yellow-400/10 border yellow-border text-yellow-400 font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                        <i data-lucide="download" class="w-3.5 h-3.5 text-yellow-400"></i>
+                        <span>Export CSV</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table Container with Yellow Gridlines -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-midnight-input text-yellow-400 uppercase font-black border-b yellow-border">
+                            <th class="py-3 px-4 border-r yellow-border">Teammate</th>
+                            <th class="py-3 px-4 border-r yellow-border">Branch</th>
+                            <th class="py-3 px-4 border-r yellow-border">Away Reason</th>
+                            <th class="py-3 px-4 border-r yellow-border">Start Time (Chicago)</th>
+                            <th class="py-3 px-4 border-r yellow-border">End Time (Chicago)</th>
+                            <th class="py-3 px-4 border-r yellow-border">Duration</th>
+                            <th class="py-3 px-4 border-r yellow-border">Max Limit</th>
+                            <th class="py-3 px-4 text-center">Compliance Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody" class="divide-y yellow-border font-medium">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="tableEmptyState" class="hidden p-12 text-center text-slate-400 space-y-3">
+                <i data-lucide="inbox" class="w-12 h-12 mx-auto text-yellow-400"></i>
+                <p class="text-base font-bold text-yellow-400">No records found for the selected date or filter criteria.</p>
+                <p class="text-xs text-slate-400">Click "Import Data" to paste new logs or adjust your active search filters.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FIXED BOTTOM-LEFT LIGHT/DARK MODE TOGGLE (Margin 10mm from left) -->
+    <div class="fixed bottom-4 left-0 z-50 pl-10mm pointer-events-none">
+        <button id="themeToggleBtn" class="pointer-events-auto p-3 bg-midnight-card border yellow-border rounded-full shadow-2xl text-yellow-400 hover:scale-110 transition flex items-center justify-center">
+            <i data-lucide="sun" id="iconSun" class="w-5 h-5 text-yellow-400 hidden"></i>
+            <i data-lucide="moon" id="iconMoon" class="w-5 h-5 text-yellow-400"></i>
+        </button>
+    </div>
+
+    <!-- TEAMMATE MANAGEMENT MODAL (ADD / EDIT / DELETE) -->
+    <div id="teammatesModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-midnight-card border yellow-border rounded-2xl max-w-3xl w-full p-6 space-y-4 shadow-2xl relative max-h-[85vh] flex flex-col">
+            <button id="closeTeammatesBtn" class="absolute top-4 right-4 text-slate-400 hover:text-yellow-400 transition">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-yellow-400/10 text-yellow-400 rounded-lg border yellow-border">
+                    <i data-lucide="users" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-yellow-400">Manage Teammates & Branches</h3>
+                    <p class="text-xs text-slate-400">Add, edit, or remove teammates from the roster.</p>
+                </div>
+            </div>
+
+            <!-- Add / Edit Form -->
+            <div class="bg-midnight-input border yellow-border rounded-xl p-4 space-y-3">
+                <h4 id="tmFormTitle" class="text-xs font-bold text-yellow-400 uppercase">Add New Teammate</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <input type="text" id="tmNameInput" placeholder="Full Name..." class="bg-midnight-card border yellow-border text-xs rounded-lg p-2.5 focus:outline-none">
+                    <select id="tmBranchSelect" class="bg-midnight-card border yellow-border text-xs rounded-lg p-2.5 focus:outline-none">
+                        <option value="Guatemala">Guatemala</option>
+                        <option value="Panama">Panama</option>
+                        <option value="Mexico">Mexico</option>
+                        <option value="Jamaica">Jamaica</option>
+                        <option value="Philippines">Philippines</option>
+                        <option value="Colombia">Colombia</option>
+                        <option value="USA">USA</option>
+                    </select>
+                    <div class="flex gap-2">
+                        <button id="tmSaveBtn" class="flex-1 bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-xs py-2 px-3 rounded-lg transition">
+                            Save Teammate
+                        </button>
+                        <button id="tmCancelEditBtn" class="hidden bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs py-2 px-3 rounded-lg transition">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teammates Search & List -->
+            <div class="flex-1 flex flex-col min-h-0 space-y-2">
+                <input type="text" id="tmSearchInput" placeholder="Filter roster list..." class="bg-midnight-input border yellow-border text-xs rounded-lg p-2 focus:outline-none w-full">
+                
+                <div class="flex-1 overflow-y-auto border yellow-border rounded-xl">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-midnight-input text-yellow-400 sticky top-0 border-b yellow-border">
+                            <tr>
+                                <th class="py-2.5 px-3">Teammate Name</th>
+                                <th class="py-2.5 px-3">Branch / Country</th>
+                                <th class="py-2.5 px-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tmTableBody" class="divide-y yellow-border">
+                            <!-- Dynamically generated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMPORT MODAL -->
+    <div id="importModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-midnight-card border yellow-border rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl relative">
+            <button id="closeImportBtn" class="absolute top-4 right-4 text-slate-400 hover:text-yellow-400 transition">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-yellow-400/10 text-yellow-400 rounded-lg border yellow-border">
+                    <i data-lucide="clipboard-paste" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-yellow-400">Import AUX Log Records</h3>
+                    <p class="text-xs text-slate-400">Copy and paste data directly from Excel, Google Sheets, or TSV format.</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-yellow-400 mb-1">Target Date for Imported Logs:</label>
+                    <input type="date" id="importDatePicker" class="bg-midnight-input border yellow-border text-sm text-yellow-400 font-bold rounded-lg p-2.5 w-full focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-yellow-400 mb-1">
+                        Paste table data below:
+                    </label>
+                    <textarea id="importRawData" rows="8" placeholder="Period started at (America/Chicago)	Period ended at (America/Chicago)	Away reason	Teammate&#10;2026-10-20 08:00:00	2026-10-20 09:05:00	On lunch	Omar Jimenez&#10;2026-10-20 09:10:00	2026-10-20 09:30:00	Restroom break	Kevin Williams" class="w-full bg-midnight-input border yellow-border rounded-lg p-3 text-xs font-mono text-slate-200 focus:outline-none"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button id="cancelImportBtn" class="px-4 py-2 text-xs font-bold text-slate-400 hover:bg-slate-800 rounded-lg transition">Cancel</button>
+                <button id="processImportBtn" class="px-5 py-2 text-xs font-black bg-yellow-400 hover:bg-yellow-500 text-slate-950 rounded-lg shadow-md transition flex items-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Process & Import Logs</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- 1. FULL TEAMMATE & BRANCH MAPPING ---
+        let MATE_BRANCH_MAP = {
+            // Philippines
+            "MJ Rafols": "Philippines", "Ann Dayuta": "Philippines", "Marianne Abigaile": "Philippines",
+            "Aaron Gozum": "Philippines", "Kyle Andrei Abad": "Philippines",
+
+            // Mexico
+            "Omar Jimenez": "Mexico", "Daniel Pelayo": "Mexico", "Kevin Gordoa": "Mexico",
+            "Raul Tornel Garcia": "Mexico", "Galilea Gutierrez": "Mexico", "Fernando Ramirez": "Mexico",
+            "Sebastian Chavez": "Mexico", "Cesar Larios": "Mexico", "Irving Reyes": "Mexico",
+            "Israel Calderon Arias": "Mexico", "Danae Fergoso": "Mexico", "Maria Saucedo": "Mexico",
+            "Alondra Mendoza": "Mexico",
+
+            // Panama
+            "Kevin Williams": "Panama", "Benneth Smith": "Panama", "Zinedine Moscote": "Panama",
+            "Dean Spencer": "Panama", "Marie Claire Perez": "Panama", "Sonia Jimenez": "Panama",
+            "Kellyneth Estrada": "Panama", "Stephanie Temple": "Panama", "Felix Lowe": "Panama",
+            "Marcos Espinosa": "Panama", "Jesus Rios": "Panama", "Alexander Santamaria": "Panama",
+            "Marielys Tejada": "Panama", "Dana Redwood": "Panama", "Lelburn Gordon": "Panama",
+            "Keyren Fuertes": "Panama", "Jose Rodriguez Rosas": "Panama",
+
+            // Guatemala
+            "Ariel Antonio Yaegui Mazate": "Guatemala", "Emilia Mishel Chajon Perez": "Guatemala",
+            "Rudy Herrera": "Guatemala", "Cesar David Lopez Colaj": "Guatemala", "Jorge Barillas": "Guatemala",
+            "Yossi Aharon Martinez Garcia": "Guatemala", "Lynda Izabel Escobedo de Leon": "Guatemala",
+            "Daniel Hernandez": "Guatemala", "Carlos Giovanni Flores Rios": "Guatemala",
+            "Kathering Santos": "Guatemala", "Luis Ajche": "Guatemala", "Marco Lopez": "Guatemala",
+            "Jose Arriaga": "Guatemala", "Melanie Annelisse Garcia Marin": "Guatemala",
+            "Jonathan Pirir": "Guatemala", "Juan Avedano": "Guatemala", "Kener Lee": "Guatemala",
+            "Acsa Esquivel": "Guatemala", "Edgar Palomo": "Guatemala", "Kevin Acabal": "Guatemala",
+            "Manfredo Monterroso": "Guatemala", "Luis R": "Guatemala", "Omar Gomez": "Guatemala",
+            "Josue Sucuc": "Guatemala", "Gustavo Lopez": "Guatemala", "Marvin Sandoval": "Guatemala",
+            "Samantha Chinchilla": "Guatemala", "Andy Pineda": "Guatemala", "Esvin Gomez": "Guatemala",
+            "Celina Ramirez": "Guatemala", "Karen Medinilla": "Guatemala", "Iverth Monterroso": "Guatemala",
+            "Lucia Herrera": "Guatemala", "Elias": "Guatemala", "Mónica Alejandra López Prado": "Guatemala",
+            "Brandon Vasquez": "Guatemala", "Alex Coyote": "Guatemala", "Pablo Valenzuela": "Guatemala",
+            "Otto De La Cruz": "Guatemala", "Emely Hernandez": "Guatemala", "Eunice Sir": "Guatemala",
+            "Edgar Linares": "Guatemala", "Kevin Lopez": "Guatemala", "Diana Abigail Orozco Alvarez": "Guatemala",
+            "Jorge Garrido": "Guatemala", "Manny Juarez": "Guatemala", "Luis Gerardo Escobar Gonzalez": "Guatemala",
+            "Ana Melendez": "Guatemala", "Pablo Saquilmer": "Guatemala", "Diego Gonzalez": "Guatemala",
+            "Sharon Olivares": "Guatemala", "Jonathan Mejia": "Guatemala", "Cristopher Orellana": "Guatemala",
+            "Sebastian Q": "Guatemala", "Jorge Saban": "Guatemala",
+
+            // Colombia
+            "Alejandra Manco": "Colombia", "Luis Alexander Leon Montano": "Colombia",
+            "Kevin Durango": "Colombia", "Michelle Marquez": "Colombia", "Alexander": "Colombia",
+            "Andrea Gonzalez": "Colombia",
+
+            // Jamaica
+            "Shiyan Lee": "Jamaica", "Vashaun Thompson": "Jamaica", "Kia Francis": "Jamaica",
+            "Alex Scarlett": "Jamaica", "Michelle Salmon": "Jamaica", "Shanique Kelly": "Jamaica",
+            "Kenford Morris": "Jamaica", "Leona Wallace": "Jamaica", "Abigayle Gentles": "Jamaica",
+            "Daneil Facey": "Jamaica", "Tevin Smallwood": "Jamaica", "Sheldon Duncombe": "Jamaica",
+
+            // USA
+            "Fatin Chad": "USA", "Hannah Luna": "USA", "Ryan Barber": "USA",
+            "Julie Nguyen": "USA", "Taylor Rouse": "USA", "Amelia Capo": "USA"
+        };
+
+        // --- 2. THRESHOLD RULES ---
+        function getMaxAllowedSeconds(status, branch) {
+            const cleanStatus = (status || '').trim();
+            if (cleanStatus === "Call Wrap Up") return 15;
+            if (cleanStatus === "On a call") return 20 * 60;
+            if (cleanStatus === "Restroom break") return 10 * 60;
+            if (cleanStatus === "On a break") return 15 * 60;
+            
+            if (cleanStatus === "On lunch") {
+                if (branch === "Panama") return 30 * 60;
+                if (branch === "Jamaica") return 45 * 60;
+                return 60 * 60; // Guatemala, Colombia, Philippines, USA, Mexico
+            }
+            return 0;
+        }
+
+        function formatThresholdLabel(status, branch) {
+            const sec = getMaxAllowedSeconds(status, branch);
+            if (sec < 60) return `${sec}s`;
+            return `${Math.floor(sec / 60)} min`;
+        }
+
+        // --- 3. STATE & STORAGE ---
+        const STORAGE_KEY_DATA = 'AUX_DASHBOARD_DATA_EN_V2';
+        const STORAGE_KEY_MATES = 'AUX_DASHBOARD_MATES_V2';
+        
+        let dbData = {};
+        let selectedDate = new Date().toISOString().split('T')[0];
+        let editingMateKey = null;
+
+        // Charts
+        let chartStatusDist = null;
+        let chartTop15BranchOffenders = null;
+
+        function loadStorage() {
+            try {
+                const storedMates = localStorage.getItem(STORAGE_KEY_MATES);
+                if (storedMates) {
+                    MATE_BRANCH_MAP = JSON.parse(storedMates);
+                }
+
+                const storedData = localStorage.getItem(STORAGE_KEY_DATA);
+                if (storedData) {
+                    dbData = JSON.parse(storedData);
+                } else {
+                    dbData = generateDemoData();
+                    saveStorage();
+                }
+            } catch (e) {
+                console.error("Storage load error", e);
+            }
+        }
+
+        function saveStorage() {
+            localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(dbData));
+            localStorage.setItem(STORAGE_KEY_MATES, JSON.stringify(MATE_BRANCH_MAP));
+        }
+
+        function generateDemoData() {
+            const today = new Date().toISOString().split('T')[0];
+            return {
+                [today]: [
+                    { startedAt: `${today} 08:00:00`, endedAt: `${today} 09:12:00`, reason: "On lunch", mate: "Omar Jimenez", branch: "Mexico", durationSec: 4320, maxSec: 3600, isOffence: true, overtimeSec: 720 },
+                    { startedAt: `${today} 09:30:00`, endedAt: `${today} 09:48:00`, reason: "Restroom break", mate: "Kevin Williams", branch: "Panama", durationSec: 1080, maxSec: 600, isOffence: true, overtimeSec: 480 },
+                    { startedAt: `${today} 10:00:00`, endedAt: `${today} 10:00:30`, reason: "Call Wrap Up", mate: "MJ Rafols", branch: "Philippines", durationSec: 30, maxSec: 15, isOffence: true, overtimeSec: 15 },
+                    { startedAt: `${today} 11:00:00`, endedAt: `${today} 11:42:00`, reason: "On lunch", mate: "Benneth Smith", branch: "Panama", durationSec: 2520, maxSec: 1800, isOffence: true, overtimeSec: 720 },
+                    { startedAt: `${today} 12:00:00`, endedAt: `${today} 12:12:00`, reason: "On a break", mate: "Ariel Antonio Yaegui Mazate", branch: "Guatemala", durationSec: 720, maxSec: 900, isOffence: false, overtimeSec: 0 },
+                    { startedAt: `${today} 13:00:00`, endedAt: `${today} 13:30:00`, reason: "On a call", mate: "Shiyan Lee", branch: "Jamaica", durationSec: 1800, maxSec: 1200, isOffence: true, overtimeSec: 600 }
+                ]
+            };
+        }
+
+        // --- 4. HELPERS ---
+        function parseDurationSeconds(startStr, endStr) {
+            try {
+                const s = new Date(startStr.replace(/-/g, '/'));
+                const e = new Date(endStr.replace(/-/g, '/'));
+                const diffMs = e - s;
+                return isNaN(diffMs) || diffMs < 0 ? 0 : Math.floor(diffMs / 1000);
+            } catch {
+                return 0;
+            }
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds || seconds <= 0) return '0s';
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            let res = '';
+            if (h > 0) res += `${h}h `;
+            if (m > 0 || h > 0) res += `${m}m `;
+            if (s > 0 || res === '') res += `${s}s`;
+            return res.trim();
+        }
+
+        // --- 5. RENDER DASHBOARD ---
+        function renderDashboard() {
+            document.getElementById('datePicker').value = selectedDate;
+
+            const rawRecords = dbData[selectedDate] || [];
+            const selectedBranch = document.getElementById('filterBranch').value;
+            const selectedStatus = document.getElementById('filterStatus').value;
+            const searchText = document.getElementById('filterSearch').value.toLowerCase().trim();
+
+            const filteredRecords = rawRecords.filter(rec => {
+                const matchesBranch = selectedBranch === 'ALL' || rec.branch === selectedBranch;
+                const matchesStatus = selectedStatus === 'ALL' || rec.reason === selectedStatus;
+                const matchesSearch = !searchText || rec.mate.toLowerCase().includes(searchText);
+                return matchesBranch && matchesStatus && matchesSearch;
+            });
+
+            updateKPIs(filteredRecords);
+            updateTopOffendersByStatus(rawRecords);
+            renderCharts(filteredRecords);
+            renderTable(filteredRecords);
+        }
+
+        function updateKPIs(records) {
+            let totalTimeSec = 0;
+            let totalOffences = 0;
+            let totalOvertimeSec = 0;
+            const activeMatesSet = new Set();
+            const mateOffenceMap = {};
+
+            records.forEach(r => {
+                totalTimeSec += r.durationSec;
+                activeMatesSet.add(r.mate);
+
+                if (r.isOffence) {
+                    totalOffences++;
+                    totalOvertimeSec += r.overtimeSec;
+                    if (!mateOffenceMap[r.mate]) mateOffenceMap[r.mate] = { count: 0, overtimeSec: 0 };
+                    mateOffenceMap[r.mate].count++;
+                    mateOffenceMap[r.mate].overtimeSec += r.overtimeSec;
+                }
+            });
+
+            document.getElementById('kpiTotalRecords').textContent = records.length;
+            document.getElementById('kpiActiveTeammates').textContent = `${activeMatesSet.size} Active Teammates`;
+            document.getElementById('kpiTotalTime').textContent = formatDuration(totalTimeSec);
+            document.getElementById('kpiTotalOffences').textContent = totalOffences;
+            document.getElementById('kpiOvertimeTotal').textContent = `+${Math.round(totalOvertimeSec / 60)} min overtime`;
+
+            let topOffender = 'None';
+            let topOffenderDetails = '0 violations';
+            let maxOvertime = 0;
+
+            Object.entries(mateOffenceMap).forEach(([mate, data]) => {
+                if (data.overtimeSec > maxOvertime) {
+                    maxOvertime = data.overtimeSec;
+                    topOffender = mate;
+                    topOffenderDetails = `${data.count} viol. (+${Math.round(data.overtimeSec / 60)}m)`;
+                }
+            });
+
+            document.getElementById('kpiTopOffenderName').textContent = topOffender;
+            document.getElementById('kpiTopOffenderDetails').textContent = topOffenderDetails;
+        }
+
+        function updateTopOffendersByStatus(records) {
+            const statuses = ["On lunch", "Restroom break", "On a break", "Call Wrap Up", "On a call"];
+            const grid = document.getElementById('topOffendersGrid');
+            grid.innerHTML = '';
+
+            statuses.forEach(status => {
+                const offencesForStatus = records.filter(r => r.reason === status && r.isOffence);
+                const mateStats = {};
+
+                offencesForStatus.forEach(r => {
+                    if (!mateStats[r.mate]) mateStats[r.mate] = { count: 0, overtimeSec: 0, branch: r.branch };
+                    mateStats[r.mate].count++;
+                    mateStats[r.mate].overtimeSec += r.overtimeSec;
+                });
+
+                let topMate = null;
+                let maxOvertime = -1;
+
+                Object.entries(mateStats).forEach(([mate, data]) => {
+                    if (data.overtimeSec > maxOvertime) {
+                        maxOvertime = data.overtimeSec;
+                        topMate = { name: mate, ...data };
+                    }
+                });
+
+                const card = document.createElement('div');
+                card.className = "bg-midnight-card border yellow-border rounded-xl p-3.5 shadow flex flex-col justify-between space-y-2 relative";
+                
+                if (topMate) {
+                    card.innerHTML = `
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-yellow-400 bg-yellow-400/10 border yellow-border px-2 py-0.5 rounded-md inline-block mb-1.5">${status}</span>
+                            <h4 class="text-xs font-bold text-yellow-400 truncate" title="${topMate.name}">${topMate.name}</h4>
+                            <p class="text-[11px] text-slate-400">${topMate.branch}</p>
+                        </div>
+                        <div class="pt-2 border-t yellow-border flex items-center justify-between">
+                            <span class="text-xs text-red-400 font-bold">${topMate.count} viol.</span>
+                            <span class="text-xs text-yellow-400 font-extrabold">+${formatDuration(topMate.overtimeSec)}</span>
+                        </div>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-800 border yellow-border px-2 py-0.5 rounded-md inline-block mb-1.5">${status}</span>
+                            <h4 class="text-xs font-bold text-slate-500">No Violations</h4>
+                            <p class="text-[11px] text-slate-600">-</p>
+                        </div>
+                        <div class="pt-2 border-t yellow-border flex items-center justify-between">
+                            <span class="text-xs text-emerald-400 font-semibold">100% OK</span>
+                            <span class="text-xs text-slate-500">0s</span>
+                        </div>
+                    `;
+                }
+
+                grid.appendChild(card);
+            });
+        }
+
+        // --- 6. CHARTS (YELLOW GRIDLINES & TOP 15 BRANCH OFFENDERS) ---
+        function renderCharts(records) {
+            // 1. Status Distribution
+            const statusMap = {};
+            records.forEach(r => {
+                statusMap[r.reason] = (statusMap[r.reason] || 0) + Math.round(r.durationSec / 60);
+            });
+
+            if (chartStatusDist) chartStatusDist.destroy();
+            const ctx1 = document.getElementById('chartStatusDist').getContext('2d');
+            chartStatusDist = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(statusMap).length ? Object.keys(statusMap) : ['No Data'],
+                    datasets: [{
+                        data: Object.values(statusMap).length ? Object.values(statusMap) : [1],
+                        backgroundColor: ['#FACC15', '#0284C7', '#10B981', '#EF4444', '#8B5CF6', '#64748B'],
+                        borderColor: '#FACC15',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#FACC15', font: { size: 10 } } } }
+                }
+            });
+
+            // 2. Top 15 Branch Offenders (Overtime in Minutes)
+            const mateBranchOvertime = {};
+            records.forEach(r => {
+                if (r.isOffence) {
+                    const label = `${r.mate} (${r.branch})`;
+                    mateBranchOvertime[label] = (mateBranchOvertime[label] || 0) + +(r.overtimeSec / 60).toFixed(1);
+                }
+            });
+
+            const sortedTop15 = Object.entries(mateBranchOvertime)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 15);
+
+            const top15Labels = sortedTop15.map(m => m[0]);
+            const top15Values = sortedTop15.map(m => m[1]);
+
+            if (chartTop15BranchOffenders) chartTop15BranchOffenders.destroy();
+            const ctx2 = document.getElementById('chartTop15BranchOffenders').getContext('2d');
+            chartTop15BranchOffenders = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: top15Labels.length ? top15Labels : ['No Offences'],
+                    datasets: [{
+                        label: 'Overtime (Min)',
+                        data: top15Values.length ? top15Values : [0],
+                        backgroundColor: '#FACC15',
+                        borderColor: '#EAB308',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            ticks: { color: '#FACC15', font: { size: 9 } },
+                            grid: { color: 'rgba(250, 204, 21, 0.2)' } // Yellow Gridlines
+                        },
+                        y: {
+                            ticks: { color: '#FACC15', font: { size: 10 } },
+                            grid: { color: 'rgba(250, 204, 21, 0.2)' } // Yellow Gridlines
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // --- 7. TABLE RENDER ---
+        function renderTable(records) {
+            const tbody = document.getElementById('dataTableBody');
+            const emptyState = document.getElementById('tableEmptyState');
+            document.getElementById('tableRecordCount').textContent = records.length;
+
+            tbody.innerHTML = '';
+
+            if (records.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            records.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-yellow-400/10 transition border-b yellow-border";
+
+                const limitLabel = formatThresholdLabel(r.reason, r.branch);
+                const isOver = r.isOffence;
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-bold text-yellow-400 border-r yellow-border">${r.mate}</td>
+                    <td class="py-3 px-4 border-r yellow-border">
+                        <span class="bg-midnight-input border yellow-border px-2 py-0.5 rounded text-[11px] font-bold text-yellow-400">${r.branch}</span>
+                    </td>
+                    <td class="py-3 px-4 border-r yellow-border">${r.reason}</td>
+                    <td class="py-3 px-4 font-mono text-slate-400 text-[11px] border-r yellow-border">${r.startedAt}</td>
+                    <td class="py-3 px-4 font-mono text-slate-400 text-[11px] border-r yellow-border">${r.endedAt}</td>
+                    <td class="py-3 px-4 font-bold border-r yellow-border ${isOver ? 'text-yellow-400' : ''}">${formatDuration(r.durationSec)}</td>
+                    <td class="py-3 px-4 font-mono text-slate-400 border-r yellow-border">${limitLabel}</td>
+                    <td class="py-3 px-4 text-center">
+                        ${isOver ? 
+                            `<span class="bg-red-500/10 border border-red-500/30 text-red-400 px-2.5 py-1 rounded-full text-[10px] font-black inline-flex items-center gap-1">
+                                <i data-lucide="alert-circle" class="w-3 h-3"></i> EXCEEDED (+${formatDuration(r.overtimeSec)})
+                             </span>` : 
+                            `<span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-2.5 py-1 rounded-full text-[10px] font-bold inline-flex items-center gap-1">
+                                <i data-lucide="check-circle-2" class="w-3 h-3"></i> OK
+                             </span>`
+                        }
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            lucide.createIcons();
+        }
+
+        // --- 8. TEAMMATE CRUD MODAL FUNCTIONS ---
+        function renderTeammatesTable() {
+            const tbody = document.getElementById('tmTableBody');
+            const search = document.getElementById('tmSearchInput').value.toLowerCase();
+            tbody.innerHTML = '';
+
+            Object.entries(MATE_BRANCH_MAP).forEach(([mate, branch]) => {
+                if (search && !mate.toLowerCase().includes(search) && !branch.toLowerCase().includes(search)) {
+                    return;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-yellow-400/5 transition border-b yellow-border text-xs";
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 font-bold text-yellow-400">${mate}</td>
+                    <td class="py-2.5 px-3 text-slate-300">${branch}</td>
+                    <td class="py-2.5 px-3 text-right space-x-1">
+                        <button onclick="editMate('${mate}')" class="p-1 bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border yellow-border rounded transition">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button onclick="deleteMate('${mate}')" class="p-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded transition">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        window.editMate = function(mate) {
+            editingMateKey = mate;
+            document.getElementById('tmNameInput').value = mate;
+            document.getElementById('tmBranchSelect').value = MATE_BRANCH_MAP[mate];
+            document.getElementById('tmFormTitle').textContent = "Edit Teammate";
+            document.getElementById('tmCancelEditBtn').classList.remove('hidden');
+        };
+
+        window.deleteMate = function(mate) {
+            if (confirm(`Remove teammate "${mate}" from active roster?`)) {
+                delete MATE_BRANCH_MAP[mate];
+                saveStorage();
+                renderTeammatesTable();
+                renderDashboard();
+            }
+        };
+
+        function resetMateForm() {
+            editingMateKey = null;
+            document.getElementById('tmNameInput').value = '';
+            document.getElementById('tmFormTitle').textContent = "Add New Teammate";
+            document.getElementById('tmCancelEditBtn').classList.add('hidden');
+        }
+
+        // --- 9. IMPORT LOGIC ---
+        function parseAndImportText(rawText, importDate) {
+            if (!rawText || !rawText.trim()) return 0;
+
+            const lines = rawText.trim().split(/\r?\n/);
+            const parsedRecords = [];
+
+            lines.forEach((line, index) => {
+                const cols = line.includes('\t') ? line.split('\t') : line.split(',');
+                if (index === 0 && (cols[0].toLowerCase().includes('period') || cols[3]?.toLowerCase().includes('mate'))) return;
+
+                if (cols.length >= 4) {
+                    const startedAt = cols[0].trim();
+                    const endedAt = cols[1].trim();
+                    const reason = cols[2].trim();
+                    const mate = cols[3].trim();
+
+                    const branch = MATE_BRANCH_MAP[mate] || "Guatemala";
+                    const durationSec = parseDurationSeconds(startedAt, endedAt);
+                    const maxSec = getMaxAllowedSeconds(reason, branch);
+                    const isOffence = durationSec > maxSec;
+                    const overtimeSec = isOffence ? (durationSec - maxSec) : 0;
+
+                    parsedRecords.push({ startedAt, endedAt, reason, mate, branch, durationSec, maxSec, isOffence, overtimeSec });
+                }
+            });
+
+            if (parsedRecords.length > 0) {
+                dbData[importDate] = parsedRecords;
+                saveStorage();
+                selectedDate = importDate;
+                renderDashboard();
+                return parsedRecords.length;
+            }
+            return 0;
+        }
+
+        // --- 10. EXPORT CSV ---
+        function exportToCSV() {
+            const records = dbData[selectedDate] || [];
+            if (!records.length) {
+                alert("No logs available for export.");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,Teammate,Branch,Away Reason,Period Started At,Period Ended At,Duration (s),Max Limit (s),Violation,Overtime (s)\n";
+            records.forEach(r => {
+                csvContent += `"${r.mate}","${r.branch}","${r.reason}","${r.startedAt}","${r.endedAt}",${r.durationSec},${r.maxSec},${r.isOffence},${r.overtimeSec}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `AUX_Report_${selectedDate}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- 11. INITIALIZATION & EVENTS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStorage();
+            renderDashboard();
+
+            // Date Navigation
+            document.getElementById('datePicker').addEventListener('change', (e) => {
+                if (e.target.value) {
+                    selectedDate = e.target.value;
+                    renderDashboard();
+                }
+            });
+
+            document.getElementById('btnPrevDay').addEventListener('click', () => {
+                const current = new Date(selectedDate);
+                current.setDate(current.getDate() - 1);
+                selectedDate = current.toISOString().split('T')[0];
+                renderDashboard();
+            });
+
+            document.getElementById('btnNextDay').addEventListener('click', () => {
+                const current = new Date(selectedDate);
+                current.setDate(current.getDate() + 1);
+                selectedDate = current.toISOString().split('T')[0];
+                renderDashboard();
+            });
+
+            // Filters
+            document.getElementById('filterBranch').addEventListener('change', renderDashboard);
+            document.getElementById('filterStatus').addEventListener('change', renderDashboard);
+            document.getElementById('filterSearch').addEventListener('input', renderDashboard);
+            document.getElementById('btnResetFilters').addEventListener('click', () => {
+                document.getElementById('filterBranch').value = 'ALL';
+                document.getElementById('filterStatus').value = 'ALL';
+                document.getElementById('filterSearch').value = '';
+                renderDashboard();
+            });
+
+            // Theme Switcher (Light/Dark Mode toggle)
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            const iconSun = document.getElementById('iconSun');
+            const iconMoon = document.getElementById('iconMoon');
+
+            themeToggleBtn.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                const isDark = document.documentElement.classList.contains('dark');
+                if (isDark) {
+                    iconSun.classList.add('hidden');
+                    iconMoon.classList.remove('hidden');
+                } else {
+                    iconSun.classList.remove('hidden');
+                    iconMoon.classList.add('hidden');
+                }
+                renderCharts(dbData[selectedDate] || []);
+            });
+
+            // Teammates Modal Controls
+            const teammatesModal = document.getElementById('teammatesModal');
+            document.getElementById('openTeammatesBtn').addEventListener('click', () => {
+                resetMateForm();
+                renderTeammatesTable();
+                teammatesModal.classList.remove('hidden');
+            });
+
+            document.getElementById('closeTeammatesBtn').addEventListener('click', () => teammatesModal.classList.add('hidden'));
+            document.getElementById('tmSearchInput').addEventListener('input', renderTeammatesTable);
+
+            document.getElementById('tmSaveBtn').addEventListener('click', () => {
+                const name = document.getElementById('tmNameInput').value.trim();
+                const branch = document.getElementById('tmBranchSelect').value;
+
+                if (!name) {
+                    alert("Please enter a valid teammate name.");
+                    return;
+                }
+
+                if (editingMateKey && editingMateKey !== name) {
+                    delete MATE_BRANCH_MAP[editingMateKey];
+                }
+
+                MATE_BRANCH_MAP[name] = branch;
+                saveStorage();
+                resetMateForm();
+                renderTeammatesTable();
+                renderDashboard();
+            });
+
+            document.getElementById('tmCancelEditBtn').addEventListener('click', resetMateForm);
+
+            // Import Modal Controls
+            const importModal = document.getElementById('importModal');
+            document.getElementById('openImportBtn').addEventListener('click', () => {
+                document.getElementById('importDatePicker').value = selectedDate;
+                importModal.classList.remove('hidden');
+            });
+
+            document.getElementById('closeImportBtn').addEventListener('click', () => importModal.classList.add('hidden'));
+            document.getElementById('cancelImportBtn').addEventListener('click', () => importModal.classList.add('hidden'));
+
+            document.getElementById('processImportBtn').addEventListener('click', () => {
+                const rawText = document.getElementById('importRawData').value;
+                const impDate = document.getElementById('importDatePicker').value || selectedDate;
+                
+                const count = parseAndImportText(rawText, impDate);
+                if (count > 0) {
+                    importModal.classList.add('hidden');
+                    document.getElementById('importRawData').value = '';
+                } else {
+                    alert("Unable to process data. Check format and try again.");
+                }
+            });
+
+            document.getElementById('btnExportCSV').addEventListener('click', exportToCSV);
+
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
