@@ -456,15 +456,59 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Helper function to extract strict local date key (YYYY-MM-DD) avoiding UTC shifts
+    // Helper function to extract local date key (YYYY-MM-DD) without UTC timezone shift
     function getLocalDateKey(dateObj) {
-      if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
-        dateObj = new Date();
-      }
+      if (!dateObj || isNaN(dateObj.getTime())) return new Date().toISOString().split('T')[0];
       const yyyy = dateObj.getFullYear();
       const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
       const dd = String(dateObj.getDate()).padStart(2, '0');
       return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // Flexible date parser for Excel/Sheets raw paste
+    function parseFlexibleDate(str) {
+      if (!str) return null;
+      let clean = str.trim().replace(/"/g, '');
+      
+      // Try standard JS date parse
+      let d = new Date(clean);
+      if (!isNaN(d.getTime())) return d;
+
+      // Handle custom formats like DD/MM/YYYY HH:MM:SS or MM/DD/YYYY
+      const parts = clean.split(/[\s,]+/);
+      if (parts.length >= 1) {
+        const dateParts = parts[0].split(/[\/\-\.]/);
+        if (dateParts.length === 3) {
+          let p1 = parseInt(dateParts[0], 10);
+          let p2 = parseInt(dateParts[1], 10);
+          let p3 = parseInt(dateParts[2], 10);
+
+          let year, month, day;
+          if (p1 > 1000) { // YYYY-MM-DD
+            year = p1; month = p2 - 1; day = p3;
+          } else if (p3 > 1000) { // MM/DD/YYYY or DD/MM/YYYY
+            year = p3;
+            if (p1 > 12) { day = p1; month = p2 - 1; } // DD/MM/YYYY
+            else { month = p1 - 1; day = p2; } // MM/DD/YYYY
+          }
+
+          let timeStr = parts.slice(1).join(' ');
+          let timeParts = timeStr.match(/(\d+):(\d+)(?::(\d+))?\s*(AM|PM)?/i);
+          let hours = 0, mins = 0, secs = 0;
+          if (timeParts) {
+            hours = parseInt(timeParts[1], 10);
+            mins = parseInt(timeParts[2], 10);
+            secs = timeParts[3] ? parseInt(timeParts[3], 10) : 0;
+            const ampm = timeParts[4] ? timeParts[4].toUpperCase() : null;
+            if (ampm === 'PM' && hours < 12) hours += 12;
+            if (ampm === 'AM' && hours === 12) hours = 0;
+          }
+
+          d = new Date(year, month, day, hours, mins, secs);
+          if (!isNaN(d.getTime())) return d;
+        }
+      }
+      return null;
     }
 
     // --- DEFAULT BRANCH MAPPING ---
@@ -521,44 +565,21 @@
       const localDate = localStorage.getItem('aux_dashboard_selected_date');
       
       if (localRoster) appState.roster = JSON.parse(localRoster);
-      if (localLogs) appState.logs = JSON.parse(localLogs);
-      if (localDate && localDate.trim()) appState.selectedDate = localDate.trim();
+      if (localLogs) {
+        const parsed = JSON.parse(localLogs);
+        if (Array.isArray(parsed)) appState.logs = parsed;
+      }
+      if (localDate) appState.selectedDate = localDate;
     } catch(e) {
       console.warn("LocalStorage initial load error:", e);
     }
 
-    // Clear all column and search filters when switching active date
     function resetActiveSearchFilters() {
-      const searchTeammate = document.getElementById('searchTeammate');
-      const branchFilter = document.getElementById('branchFilter');
-      const tableColFilterTeammate = document.getElementById('tableColFilterTeammate');
-      const tableColFilterBranch = document.getElementById('tableColFilterBranch');
-      const tableColFilterStatus = document.getElementById('tableColFilterStatus');
-
-      if (searchTeammate) searchTeammate.value = '';
-      if (branchFilter) branchFilter.value = 'ALL';
-      if (tableColFilterTeammate) tableColFilterTeammate.value = 'ALL';
-      if (tableColFilterBranch) tableColFilterBranch.value = 'ALL';
-      if (tableColFilterStatus) tableColFilterStatus.value = 'ALL';
-    }
-
-    // Synchronous state save to LocalStorage and safe async write to Firebase
-    function saveStateToStorage() {
-      try {
-        localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
-        localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
-        localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
-      } catch(e) {
-        console.warn("LocalStorage save error:", e);
-      }
-
-      database.ref('dashboard_data').set({
-        roster: appState.roster,
-        logs: appState.logs,
-        lastUpdated: Date.now()
-      }).catch(err => {
-        console.warn("Firebase remote sync warning:", err);
-      });
+      document.getElementById('searchTeammate').value = '';
+      document.getElementById('branchFilter').value = 'ALL';
+      document.getElementById('tableColFilterTeammate').value = 'ALL';
+      document.getElementById('tableColFilterBranch').value = 'ALL';
+      document.getElementById('tableColFilterStatus').value = 'ALL';
     }
 
     // --- FIREBASE REALTIME SYNC ENGINE ---
@@ -568,16 +589,28 @@
       dbRef.on('value', (snapshot) => {
         const val = snapshot.val();
         if (val) {
-          if (val.roster && typeof val.roster === 'object') {
+          if (val.roster) {
             appState.roster = { ...appState.roster, ...val.roster };
           }
           if (val.logs) {
             const remoteLogs = Array.isArray(val.logs) ? val.logs : Object.values(val.logs);
             
-            // Merge local and remote logs using unique IDs so local entries are never overwritten or wiped
+            // Merge local and remote logs using unique IDs so local entries are never lost
             const logMap = new Map();
-            appState.logs.forEach(l => { if (l && l.id) logMap.set(l.id, l); });
-            remoteLogs.forEach(l => { if (l && l.id) logMap.set(l.id, l); });
+            appState.logs.forEach(l => { 
+              if (l) {
+                const idKey = l.id || ('log_' + l.date + '_' + l.teammate + '_' + l.startTime);
+                l.id = idKey;
+                logMap.set(idKey, l); 
+              }
+            });
+            remoteLogs.forEach(l => { 
+              if (l) {
+                const idKey = l.id || ('log_' + l.date + '_' + l.teammate + '_' + l.startTime);
+                l.id = idKey;
+                logMap.set(idKey, l); 
+              }
+            });
             
             appState.logs = Array.from(logMap.values());
           }
@@ -585,7 +618,7 @@
           saveStateToStorage();
         }
 
-        // Persist combined state locally
+        // Persist back to LocalStorage
         try {
           localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
           localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
@@ -597,6 +630,26 @@
         if (document.getElementById('teammatesModal') && !document.getElementById('teammatesModal').classList.contains('hidden')) {
           renderRosterTable();
         }
+      });
+    }
+
+    function saveStateToStorage() {
+      // 1. Synchronously save roster, logs, and selectedDate to LocalStorage
+      try {
+        localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
+        localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
+        localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
+      } catch(e) {
+        console.warn("LocalStorage error:", e);
+      }
+
+      // 2. Direct sync write to Firebase RTDB
+      return database.ref('dashboard_data').set({
+        roster: appState.roster,
+        logs: appState.logs,
+        lastUpdated: Date.now()
+      }).catch(err => {
+        console.error("Firebase write error:", err);
       });
     }
 
@@ -648,6 +701,7 @@
       setupFilters();
       populateBranchDropdown();
 
+      renderDashboard();
       initFirebaseSync();
     });
 
@@ -672,7 +726,7 @@
       });
     }
 
-    // --- SAVE DAY TOAST NOTIFICATION ---
+    // --- FUNCIÓN PARA MOSTRAR ALERTA EMERGENTE GRANDE (TOAST MODAL) ---
     function triggerSaveDayAlert(title, message, isSuccess = true) {
       const modal = document.getElementById('saveDayAlertModal');
       const titleEl = document.getElementById('saveAlertTitle');
@@ -723,7 +777,7 @@
 
       prevBtn.addEventListener('click', () => {
         const parts = appState.selectedDate.split('-');
-        const current = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        const current = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
         current.setDate(current.getDate() - 1);
         appState.selectedDate = getLocalDateKey(current);
         dateInput.value = appState.selectedDate;
@@ -734,7 +788,7 @@
 
       nextBtn.addEventListener('click', () => {
         const parts = appState.selectedDate.split('-');
-        const current = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        const current = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
         current.setDate(current.getDate() + 1);
         appState.selectedDate = getLocalDateKey(current);
         dateInput.value = appState.selectedDate;
@@ -757,7 +811,7 @@
           return;
         }
 
-        // Synchronously persist locally and push to Firebase
+        // Save immediately locally and sync to Firebase
         saveStateToStorage();
 
         triggerSaveDayAlert('Day Saved Successfully!', `${dayLogs.length} records saved for ${appState.selectedDate}`, true);
@@ -919,7 +973,7 @@
       let parsedCount = 0;
       let firstImportedDate = null;
 
-      lines.forEach(line => {
+      lines.forEach((line, idx) => {
         const cols = line.split('\t').map(c => c.trim().replace(/^"|"$/g, ''));
         if (cols.length >= 4) {
           const startStr = cols[0];
@@ -929,21 +983,23 @@
 
           if (startStr.toLowerCase().includes('period started')) return;
 
-          const startDate = new Date(startStr);
-          const endDate = new Date(endStr);
+          const startDate = parseFlexibleDate(startStr);
+          const endDate = parseFlexibleDate(endStr);
 
-          if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-            const durationSecs = Math.max(0, Math.round((endDate - startDate) / 1000));
+          if (startDate && endDate) {
+            const durationSecs = Math.max(0, Math.round((endDate.getTime() - startDate.getTime()) / 1000));
             
-            // Extract local YYYY-MM-DD date key strictly without UTC shifting
+            // Extract exact local YYYY-MM-DD date key
             const dateKey = getLocalDateKey(startDate);
             if (!firstImportedDate) firstImportedDate = dateKey;
 
             const branch = appState.roster[teammate] || 'Guatemala';
             const maxSecs = getMaxLimitSeconds(awayReason, branch);
 
+            const uniqueId = 'log_' + dateKey + '_' + teammate.replace(/[^a-z0-9]/gi, '_') + '_' + startDate.getTime() + '_' + idx;
+
             appState.logs.push({
-              id: 'log_' + startDate.getTime() + '_' + Math.random().toString(36).substr(2, 7),
+              id: uniqueId,
               date: dateKey,
               teammate,
               branch,
@@ -968,8 +1024,6 @@
 
         resetActiveSearchFilters();
         recalculateAllLimits();
-        
-        // Immediate synchronous save to LocalStorage
         saveStateToStorage();
 
         document.getElementById('importRawData').value = '';
