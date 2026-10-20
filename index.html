@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="es" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -70,13 +70,13 @@
 </head>
 <body class="bg-midnight text-slate-100 min-h-screen transition-colors duration-200 antialiased relative">
 
-  <!-- MAIN CONTAINER WITH PRECISE HORIZONTAL MARGINS -->
+  <!-- MAIN CONTAINER -->
   <div class="w-full min-h-screen pl-[calc(10mm+52px)] pr-[10mm] py-6 flex flex-col gap-6">
 
     <!-- TOP HEADER -->
     <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-xl bg-midnightCard border-2 border-yellow-accent shadow-lg shadow-yellow-500/10">
       
-      <!-- Title Section with Yellow Alarm Icon -->
+      <!-- Title Section -->
       <div class="flex items-center gap-3">
         <div class="p-3 bg-yellow-500/20 rounded-xl border border-yellow-accent text-accentYellow animate-pulse">
           <i data-lucide="alarm-clock" class="w-8 h-8"></i>
@@ -116,7 +116,7 @@
           </button>
         </div>
 
-        <!-- Manage Teammates Button (Password Protected) -->
+        <!-- Manage Teammates Button -->
         <button id="openTeammatesBtn" class="flex items-center gap-2 px-4 py-2.5 bg-midnight hover:bg-yellow-500/20 text-accentYellow border-2 border-yellow-accent font-bold rounded-lg transition duration-150 shadow-sm">
           <i data-lucide="users" class="w-4 h-4"></i>
           <span>Manage Teammates</span>
@@ -212,14 +212,12 @@
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" id="topOffendersGrid">
-        <!-- Dynamic Cards Inserted Here via JS -->
+        <!-- Dynamic Cards -->
       </div>
     </div>
 
     <!-- CHARTS SECTION -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      
-      <!-- Chart 1: AUX Time Distribution -->
       <div class="p-5 rounded-xl bg-midnightCard border-2 border-yellow-accent flex flex-col gap-4">
         <h3 class="text-md font-bold text-accentYellow flex items-center gap-2">
           <i data-lucide="pie-chart" class="w-5 h-5"></i>
@@ -230,7 +228,6 @@
         </div>
       </div>
 
-      <!-- Chart 2: Top 15 Branch Offenders -->
       <div class="p-5 rounded-xl bg-midnightCard border-2 border-yellow-accent flex flex-col gap-4">
         <h3 class="text-md font-bold text-accentYellow flex items-center gap-2">
           <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
@@ -240,7 +237,6 @@
           <canvas id="topBranchOffendersChart"></canvas>
         </div>
       </div>
-
     </div>
 
     <!-- DETAILED LOGS TABLE -->
@@ -301,7 +297,7 @@
 
   </div>
 
-  <!-- NOTIFICACIÓN EMERGENTE AL GUARDAR DÍA (SAVE DAY TOAST ALERT MODAL) -->
+  <!-- NOTIFICACIÓN EMERGENTE -->
   <div id="saveDayAlertModal" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none opacity-0 translate-y-[-20px]">
     <div class="bg-midnightCard border-2 border-yellow-accent rounded-xl p-4 shadow-2xl shadow-yellow-500/30 flex items-center gap-4 min-w-[320px] max-w-md pointer-events-auto">
       <div id="saveAlertIconContainer" class="p-3 bg-green-500/20 rounded-xl border border-green-500 text-green-400">
@@ -317,7 +313,7 @@
     </div>
   </div>
 
-  <!-- FIXED THEME TOGGLE ICON (BOTTOM LEFT) -->
+  <!-- THEME TOGGLE -->
   <button id="themeToggleBtn" class="fixed bottom-[10mm] left-[10mm] z-50 p-2.5 rounded-full bg-midnightCard border-2 border-yellow-accent text-accentYellow hover:bg-yellow-500/20 shadow-lg shadow-black/50 transition duration-200" title="Toggle Light / Dark Mode">
     <i data-lucide="sun" id="themeIconSun" class="w-5 h-5 hidden"></i>
     <i data-lucide="moon" id="themeIconMoon" class="w-5 h-5"></i>
@@ -365,7 +361,6 @@
         </button>
       </div>
 
-      <!-- Add New Teammate Form -->
       <form id="addTeammateForm" class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-midnight p-3 rounded-lg border border-yellow-accent">
         <input type="text" id="newTeammateName" placeholder="Teammate Name..." required class="bg-midnightCard border border-yellow-accent rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none">
         <select id="newTeammateBranch" required class="bg-midnightCard border border-yellow-accent rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none">
@@ -382,7 +377,6 @@
         </button>
       </form>
 
-      <!-- Teammates Search & List -->
       <div class="relative">
         <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
         <input type="text" id="searchRosterInput" placeholder="Filter roster..." class="w-full bg-midnight border border-yellow-accent rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none">
@@ -420,7 +414,7 @@
 
       <p class="text-xs text-slate-300">
         Paste raw tab-separated rows from Excel/Sheets with the following required columns:<br>
-        <code class="text-accentYellow">Period started at (America/Chicago) | Period ended at (America/Chicago) | Away reason | Teammate</code>
+        <code class="text-accentYellow">Period started at | Period ended at | Away reason | Teammate</code>
       </p>
 
       <textarea id="importRawData" rows="8" placeholder="Paste copied data here..." class="w-full bg-midnight text-slate-100 font-mono text-xs border border-yellow-accent rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-accentYellow"></textarea>
@@ -435,12 +429,11 @@
     </div>
   </div>
 
-  <!-- SCRIPT IMPLEMENTATION WITH FIREBASE V13 MODULAR SDK -->
+  <!-- SCRIPT ENGINE WITH FIREBASE V13 ES MODULES -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/13.0.0/firebase-database.js";
 
-    // --- FIREBASE CONFIGURATION ---
     const firebaseConfig = {
       apiKey: "AIzaSyAUkhxAp6cR2_78FTS1g66WCF8ZkUmXYU4",
       authDomain: "auxstatusdashboard.firebaseapp.com",
@@ -452,16 +445,14 @@
       measurementId: "G-QGBQFQX5Z2"
     };
 
-    // Initialize Firebase v13 Modular SDK
     let app, database;
     try {
       app = initializeApp(firebaseConfig);
       database = getDatabase(app);
     } catch(e) {
-      console.warn("Firebase initialization warning:", e);
+      console.warn("Firebase Init notice:", e);
     }
 
-    // Helper to get local date key YYYY-MM-DD
     function getLocalDateKey(dateObj) {
       if (!dateObj || isNaN(dateObj.getTime())) return new Date().toISOString().split('T')[0];
       const yyyy = dateObj.getFullYear();
@@ -470,7 +461,6 @@
       return `${yyyy}-${mm}-${dd}`;
     }
 
-    // Flexible date parser for raw Excel paste
     function parseFlexibleDate(str) {
       if (!str) return null;
       let clean = str.trim().replace(/"/g, '');
@@ -516,7 +506,6 @@
       return null;
     }
 
-    // --- DEFAULT BRANCH MAPPING ---
     const DEFAULT_ROSTER = {
       "MJ Rafols": "Philippines", "Omar Jimenez": "Mexico", "Kevin Williams": "Panama", "Benneth Smith": "Panama",
       "Zinedine Moscote": "Panama", "Dean Spencer": "Panama", "Marie Claire Perez": "Panama", "Ariel Antonio Yaegui Mazate": "Guatemala",
@@ -551,7 +540,6 @@
       "Keyren Fuertes": "Panama", "Jorge Saban": "Guatemala"
     };
 
-    // --- APPLICATION STATE ---
     let appState = {
       roster: { ...DEFAULT_ROSTER },
       logs: [],
@@ -590,7 +578,6 @@
     }
 
     function saveStateToStorage() {
-      // 1. Immediate LocalStorage Write
       try {
         localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
         localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
@@ -599,7 +586,6 @@
         console.warn("LocalStorage save error:", e);
       }
 
-      // 2. Firebase v13 Set Write
       if (database) {
         try {
           const dbRef = ref(database, 'dashboard_data');
@@ -607,7 +593,7 @@
             roster: appState.roster,
             logs: appState.logs,
             lastUpdated: Date.now()
-          }).catch(err => console.warn("Firebase sync error:", err));
+          }).catch(err => console.warn("Firebase sync warning:", err));
         } catch(e) {
           console.warn("Firebase write exception:", e);
         }
@@ -626,7 +612,6 @@
               const remoteLogs = Array.isArray(val.logs) ? val.logs : Object.values(val.logs);
               const logMap = new Map();
               
-              // Map local logs first
               appState.logs.forEach(l => { 
                 if (l) {
                   const idKey = l.id || ('log_' + l.date + '_' + l.teammate + '_' + l.startTime);
@@ -635,7 +620,6 @@
                 }
               });
 
-              // Merge remote logs
               remoteLogs.forEach(l => { 
                 if (l) {
                   const idKey = l.id || ('log_' + l.date + '_' + l.teammate + '_' + l.startTime);
@@ -648,7 +632,6 @@
             }
           }
 
-          // Persist merged state to LocalStorage
           try {
             localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
             localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
@@ -659,7 +642,7 @@
           renderDashboard();
         });
       } catch(e) {
-        console.warn("Firebase onValue setup warning:", e);
+        console.warn("Firebase sync warning:", e);
       }
     }
 
@@ -1269,10 +1252,10 @@
           <td class="p-2.5 font-bold border-r border-yellow-500/20 text-slate-100">${name}</td>
           <td class="p-2.5 border-r border-yellow-500/20 text-slate-300">${branch}</td>
           <td class="p-2.5 text-center flex items-center justify-center gap-2">
-            <button onclick="editTeammate('${name}')" class="p-1 hover:text-accentYellow text-slate-400" title="Edit">
+            <button onclick="window.editTeammate('${name}')" class="p-1 hover:text-accentYellow text-slate-400" title="Edit">
               <i data-lucide="edit-3" class="w-4 h-4"></i>
             </button>
-            <button onclick="deleteTeammate('${name}')" class="p-1 hover:text-red-400 text-slate-400" title="Delete">
+            <button onclick="window.deleteTeammate('${name}')" class="p-1 hover:text-red-400 text-slate-400" title="Delete">
               <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
           </td>
