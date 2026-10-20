@@ -525,16 +525,21 @@
 
         const val = snapshot.val();
         if (val) {
-          if (val.roster) appState.roster = val.roster;
+          if (val.roster) {
+            appState.roster = { ...appState.roster, ...val.roster };
+          }
           if (val.logs) {
             const remoteLogs = Array.isArray(val.logs) ? val.logs : Object.values(val.logs);
-            // Merge remote logs with existing local logs by unique id
+            
+            // Merge local and remote logs using unique IDs to prevent data loss on refresh
             const logMap = new Map();
-            appState.logs.forEach(l => logMap.set(l.id, l));
-            remoteLogs.forEach(l => logMap.set(l.id, l));
+            appState.logs.forEach(l => { if(l && l.id) logMap.set(l.id, l); });
+            remoteLogs.forEach(l => { if(l && l.id) logMap.set(l.id, l); });
+            
             appState.logs = Array.from(logMap.values());
           }
-        } else {
+        } else if (appState.logs.length > 0) {
+          // If remote DB is empty but we have local data, back it up to Firebase
           saveStateToStorage();
         }
         recalculateAllLimits();
@@ -688,7 +693,7 @@
       });
 
       prevBtn.addEventListener('click', () => {
-        const current = new Date(appState.selectedDate);
+        const current = new Date(appState.selectedDate + 'T00:00:00');
         current.setDate(current.getDate() - 1);
         appState.selectedDate = current.toISOString().split('T')[0];
         dateInput.value = appState.selectedDate;
@@ -696,7 +701,7 @@
       });
 
       nextBtn.addEventListener('click', () => {
-        const current = new Date(appState.selectedDate);
+        const current = new Date(appState.selectedDate + 'T00:00:00');
         current.setDate(current.getDate() + 1);
         appState.selectedDate = current.toISOString().split('T')[0];
         dateInput.value = appState.selectedDate;
@@ -717,7 +722,7 @@
           return;
         }
 
-        // Commit state directly
+        // Commit state directly to local and remote DB
         saveStateToStorage();
 
         // Launch confirmation banner
@@ -932,7 +937,7 @@
         appState.isPendingSave = true;
         recalculateAllLimits();
         
-        // Save immediately locally so switching tabs doesn't wipe imported data
+        // Save immediately locally
         try {
           localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
         } catch(e) {}
