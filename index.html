@@ -306,6 +306,22 @@
 
   </div>
 
+  <!-- NOTIFICACIÓN EMERGENTE AL GUARDAR DÍA (SAVE DAY ALERT MODAL) -->
+  <div id="saveDayAlertModal" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none opacity-0 translate-y-[-20px]">
+    <div class="bg-midnightCard border-2 border-yellow-accent rounded-xl p-4 shadow-2xl shadow-yellow-500/20 flex items-center gap-4 min-w-[320px] max-w-md pointer-events-auto">
+      <div id="saveAlertIconContainer" class="p-3 bg-green-500/20 rounded-xl border border-green-500 text-green-400">
+        <i data-lucide="check-circle-2" class="w-8 h-8"></i>
+      </div>
+      <div class="flex-1">
+        <h4 id="saveAlertTitle" class="text-md font-black text-accentYellow uppercase tracking-wider">Day Saved!</h4>
+        <p id="saveAlertMessage" class="text-xs text-slate-300 font-medium mt-0.5">Data saved for date</p>
+      </div>
+      <button id="closeSaveAlertBtn" class="text-slate-400 hover:text-white p-1">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </div>
+
   <!-- FIXED THEME TOGGLE ICON (BOTTOM LEFT) -->
   <button id="themeToggleBtn" class="fixed bottom-[10mm] left-[10mm] z-50 p-2.5 rounded-full bg-midnightCard border-2 border-yellow-accent text-accentYellow hover:bg-yellow-500/20 shadow-lg shadow-black/50 transition duration-200" title="Toggle Light / Dark Mode">
     <i data-lucide="sun" id="themeIconSun" class="w-5 h-5 hidden"></i>
@@ -486,6 +502,7 @@
 
     let auxChartInstance = null;
     let topOffendersChartInstance = null;
+    let alertTimeout = null;
 
     // --- FIREBASE REALTIME SYNC ENGINE ---
     function initFirebaseSync() {
@@ -594,12 +611,48 @@
       });
     }
 
+    // --- FUNCIÓN PARA MOSTRAR ALERTA EMERGENTE GRANDE ---
+    function triggerSaveDayAlert(title, message, isSuccess = true) {
+      const modal = document.getElementById('saveDayAlertModal');
+      const titleEl = document.getElementById('saveAlertTitle');
+      const msgEl = document.getElementById('saveAlertMessage');
+      const iconContainer = document.getElementById('saveAlertIconContainer');
+
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+
+      if (isSuccess) {
+        iconContainer.className = "p-3 bg-green-500/20 rounded-xl border border-green-500 text-green-400";
+        iconContainer.innerHTML = `<i data-lucide="check-circle-2" class="w-8 h-8"></i>`;
+      } else {
+        iconContainer.className = "p-3 bg-red-500/20 rounded-xl border border-red-500 text-red-400";
+        iconContainer.innerHTML = `<i data-lucide="alert-triangle" class="w-8 h-8"></i>`;
+      }
+      lucide.createIcons();
+
+      // Mostrar modal
+      modal.classList.remove('opacity-0', 'translate-y-[-20px]');
+      modal.classList.add('opacity-100', 'translate-y-0');
+
+      if (alertTimeout) clearTimeout(alertTimeout);
+      alertTimeout = setTimeout(() => {
+        hideSaveDayAlert();
+      }, 2500);
+    }
+
+    function hideSaveDayAlert() {
+      const modal = document.getElementById('saveDayAlertModal');
+      modal.classList.remove('opacity-100', 'translate-y-0');
+      modal.classList.add('opacity-0', 'translate-y-[-20px]');
+    }
+
     // --- DATE CONTROLS & SAVE DAY ---
     function setupDateControls() {
       const dateInput = document.getElementById('datePicker');
       const prevBtn = document.getElementById('prevDateBtn');
       const nextBtn = document.getElementById('nextDateBtn');
       const saveDayBtn = document.getElementById('saveDayBtn');
+      const closeAlertBtn = document.getElementById('closeSaveAlertBtn');
 
       dateInput.addEventListener('change', (e) => {
         appState.selectedDate = e.target.value;
@@ -622,10 +675,26 @@
         renderDashboard();
       });
 
+      closeAlertBtn.addEventListener('click', hideSaveDayAlert);
+
+      // ACCIÓN DE GUARDAR DÍA PERSISTENTE Y NOTIFICACIÓN GRANDE
       saveDayBtn.addEventListener('click', () => {
         recalculateAllLimits();
+        
+        const dayLogs = appState.logs.filter(l => l.date === appState.selectedDate);
+
+        if (dayLogs.length === 0) {
+          triggerSaveDayAlert('No Data Found', `No logs imported for ${appState.selectedDate}. Import data first!`, false);
+          return;
+        }
+
+        const otherLogs = appState.logs.filter(l => l.date !== appState.selectedDate);
+        appState.logs = [...otherLogs, ...dayLogs];
+
         saveStateToStorage();
-        alert(`Data for ${appState.selectedDate} saved successfully!`);
+
+        // Lanzar notificación emergente
+        triggerSaveDayAlert('Day Saved Successfully!', `${dayLogs.length} records saved for ${appState.selectedDate}`, true);
       });
     }
 
