@@ -29,6 +29,10 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
+  <!-- Firebase Modular Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
   <style>
     /* Custom Scrollbar */
     ::-webkit-scrollbar {
@@ -72,8 +76,6 @@
 <body class="bg-midnight text-slate-100 min-h-screen transition-colors duration-200 antialiased relative">
 
   <!-- MAIN CONTAINER WITH PRECISE HORIZONTAL MARGINS -->
-  <!-- pl-[calc(10mm+52px)]: Ends 10mm to the right of the 40px fixed toggle button on the left -->
-  <!-- pr-[10mm]: Ends 10mm from the right viewport edge -->
   <div class="w-full min-h-screen pl-[calc(10mm+52px)] pr-[10mm] py-6 flex flex-col gap-6">
 
     <!-- TOP HEADER -->
@@ -402,8 +404,23 @@
     </div>
   </div>
 
-  <!-- SCRIPT IMPLEMENTATION -->
+  <!-- SCRIPT IMPLEMENTATION WITH FIREBASE INTEGRATION -->
   <script>
+    // --- FIREBASE CONFIGURATION & INITIALIZATION ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyAUkhxAp6cR2_78FTS1g66WCF8ZkUmXYU4",
+      authDomain: "auxstatusdashboard.firebaseapp.com",
+      databaseURL: "https://auxstatusdashboard-default-rtdb.firebaseio.com",
+      projectId: "auxstatusdashboard",
+      storageBucket: "auxstatusdashboard.firebasestorage.app",
+      messagingSenderId: "993372406272",
+      appId: "1:993372406272:web:e61ae859c6a3668de58ee5",
+      measurementId: "G-QGBQFQX5Z2"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
     // --- DEFAULT BRANCH MAPPING ---
     const DEFAULT_ROSTER = {
       "MJ Rafols": "Philippines", "Omar Jimenez": "Mexico", "Kevin Williams": "Panama", "Benneth Smith": "Panama",
@@ -447,23 +464,39 @@
       unlockedManagement: false,
     };
 
-    // Chart instances
     let auxChartInstance = null;
     let topOffendersChartInstance = null;
 
-    // Load from LocalStorage
-    function loadStateFromStorage() {
-      const savedRoster = localStorage.getItem('aux_dashboard_roster');
-      if (savedRoster) {
-        appState.roster = JSON.parse(savedRoster);
-      }
-      const savedLogs = localStorage.getItem('aux_dashboard_logs');
-      if (savedLogs) {
-        appState.logs = JSON.parse(savedLogs);
-      }
+    // --- FIREBASE REALTIME SYNC ENGINE ---
+    function initFirebaseSync() {
+      const dbRef = database.ref('dashboard_data');
+      
+      // Listen for remote changes in real-time
+      dbRef.on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          if (val.roster) appState.roster = val.roster;
+          if (val.logs) appState.logs = Array.isArray(val.logs) ? val.logs : Object.values(val.logs);
+        } else {
+          // Seed database with default roster if empty
+          saveStateToStorage();
+        }
+        populateBranchDropdown();
+        renderDashboard();
+        if (document.getElementById('teammatesModal') && !document.getElementById('teammatesModal').classList.contains('hidden')) {
+          renderRosterTable();
+        }
+      });
     }
 
     function saveStateToStorage() {
+      database.ref('dashboard_data').set({
+        roster: appState.roster,
+        logs: appState.logs,
+        lastUpdated: Date.now()
+      }).catch(err => console.error("Firebase write error:", err));
+      
+      // Local backup
       localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
       localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
     }
@@ -494,7 +527,6 @@
 
     // --- DOM INITIALIZATION ---
     document.addEventListener('DOMContentLoaded', () => {
-      loadStateFromStorage();
       lucide.createIcons();
 
       const dateInput = document.getElementById('datePicker');
@@ -506,7 +538,7 @@
       setupFilters();
       populateBranchDropdown();
 
-      renderDashboard();
+      initFirebaseSync();
     });
 
     // --- WORKING THEME TOGGLE (SUN / MOON) ---
@@ -526,7 +558,7 @@
           sunIcon.classList.add('hidden');
           moonIcon.classList.remove('hidden');
         }
-        renderCharts();
+        renderCharts(getFilteredLogs());
       });
     }
 
@@ -564,7 +596,6 @@
       const teammatesModal = document.getElementById('teammatesModal');
       const importModal = document.getElementById('importModal');
 
-      // Open Teammates Trigger with Password Prompt
       document.getElementById('openTeammatesBtn').addEventListener('click', () => {
         if (appState.unlockedManagement) {
           teammatesModal.classList.remove('hidden');
@@ -574,7 +605,6 @@
         }
       });
 
-      // Password Submit (PASSWORD: management2026!)
       document.getElementById('passwordForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const pwd = document.getElementById('passwordInput').value;
@@ -593,10 +623,8 @@
       document.getElementById('closePasswordModal').addEventListener('click', () => passwordModal.classList.add('hidden'));
       document.getElementById('cancelPasswordBtn').addEventListener('click', () => passwordModal.classList.add('hidden'));
 
-      // Close Teammates Modal
       document.getElementById('closeTeammatesModal').addEventListener('click', () => teammatesModal.classList.add('hidden'));
 
-      // Add Teammate Form
       document.getElementById('addTeammateForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const name = document.getElementById('newTeammateName').value.trim();
@@ -611,17 +639,14 @@
         }
       });
 
-      // Search Roster
       document.getElementById('searchRosterInput').addEventListener('input', () => {
         renderRosterTable();
       });
 
-      // Import Modal Triggers
       document.getElementById('openImportBtn').addEventListener('click', () => importModal.classList.remove('hidden'));
       document.getElementById('closeImportModal').addEventListener('click', () => importModal.classList.add('hidden'));
       document.getElementById('cancelImportBtn').addEventListener('click', () => importModal.classList.add('hidden'));
 
-      // Process Copy & Paste Import
       document.getElementById('processImportBtn').addEventListener('click', processImportData);
     }
 
@@ -643,9 +668,11 @@
 
     function populateBranchDropdown() {
       const select = document.getElementById('branchFilter');
+      const currentVal = select.value;
       const branches = Array.from(new Set(Object.values(appState.roster))).sort();
       select.innerHTML = `<option value="ALL">All Branches / Countries</option>` + 
         branches.map(b => `<option value="${b}">${b}</option>`).join('');
+      select.value = currentVal;
     }
 
     // --- PROCESS PASTE IMPORT ---
@@ -703,19 +730,23 @@
       }
     }
 
-    // --- MAIN RENDER ENGINE ---
-    function renderDashboard() {
+    function getFilteredLogs() {
       const branchVal = document.getElementById('branchFilter').value;
       const statusVal = document.getElementById('statusFilter').value;
       const searchVal = document.getElementById('searchTeammate').value.toLowerCase().trim();
 
-      const filteredLogs = appState.logs.filter(log => {
+      return appState.logs.filter(log => {
         if (log.date !== appState.selectedDate) return false;
         if (branchVal !== 'ALL' && log.branch !== branchVal) return false;
         if (statusVal !== 'ALL' && log.awayReason !== statusVal) return false;
         if (searchVal && !log.teammate.toLowerCase().includes(searchVal)) return false;
         return true;
       });
+    }
+
+    // --- MAIN RENDER ENGINE ---
+    function renderDashboard() {
+      const filteredLogs = getFilteredLogs();
 
       renderKPIs(filteredLogs);
       renderTopOffendersGrid(filteredLogs);
@@ -979,15 +1010,7 @@
 
     // --- CSV EXPORT ---
     function exportLogsCSV() {
-      const branchVal = document.getElementById('branchFilter').value;
-      const statusVal = document.getElementById('statusFilter').value;
-
-      const filteredLogs = appState.logs.filter(log => {
-        if (log.date !== appState.selectedDate) return false;
-        if (branchVal !== 'ALL' && log.branch !== branchVal) return false;
-        if (statusVal !== 'ALL' && log.awayReason !== statusVal) return false;
-        return true;
-      });
+      const filteredLogs = getFilteredLogs();
 
       if (filteredLogs.length === 0) {
         alert('No data available to export.');
