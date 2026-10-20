@@ -505,12 +505,15 @@
     let topOffendersChartInstance = null;
     let alertTimeout = null;
 
-    // Pre-load local storage immediately on startup
+    // Load LocalStorage immediately on startup including active selectedDate
     try {
       const localRoster = localStorage.getItem('aux_dashboard_roster');
       const localLogs = localStorage.getItem('aux_dashboard_logs');
+      const localDate = localStorage.getItem('aux_dashboard_selected_date');
+      
       if (localRoster) appState.roster = JSON.parse(localRoster);
       if (localLogs) appState.logs = JSON.parse(localLogs);
+      if (localDate) appState.selectedDate = localDate;
     } catch(e) {
       console.warn("LocalStorage initial load error:", e);
     }
@@ -520,9 +523,6 @@
       const dbRef = database.ref('dashboard_data');
       
       dbRef.on('value', (snapshot) => {
-        // Prevent remote Firebase listener from replacing local pending unsaved import logs
-        if (appState.isPendingSave) return;
-
         const val = snapshot.val();
         if (val) {
           if (val.roster) {
@@ -531,7 +531,7 @@
           if (val.logs) {
             const remoteLogs = Array.isArray(val.logs) ? val.logs : Object.values(val.logs);
             
-            // Merge local and remote logs using unique IDs to prevent data loss on refresh
+            // Merge local and remote logs using unique IDs so no local records vanish
             const logMap = new Map();
             appState.logs.forEach(l => { if(l && l.id) logMap.set(l.id, l); });
             remoteLogs.forEach(l => { if(l && l.id) logMap.set(l.id, l); });
@@ -539,9 +539,16 @@
             appState.logs = Array.from(logMap.values());
           }
         } else if (appState.logs.length > 0) {
-          // If remote DB is empty but we have local data, back it up to Firebase
+          // If remote DB is empty but local has logs, back them up to Firebase
           saveStateToStorage();
         }
+
+        // Save merged state back to LocalStorage
+        try {
+          localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
+          localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
+        } catch(e) {}
+
         recalculateAllLimits();
         populateBranchDropdown();
         renderDashboard();
@@ -552,18 +559,18 @@
     }
 
     function saveStateToStorage() {
-      // 1. Save to LocalStorage immediately
+      // 1. Save roster, logs and selected date to LocalStorage
       try {
         localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
         localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
+        localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
       } catch(e) {
         console.warn("LocalStorage error:", e);
       }
 
-      // 2. Clear pending status flag
       appState.isPendingSave = false;
 
-      // 3. Force direct update to Firebase RTDB
+      // 2. Direct sync write to Firebase RTDB
       return database.ref('dashboard_data').set({
         roster: appState.roster,
         logs: appState.logs,
@@ -689,6 +696,7 @@
 
       dateInput.addEventListener('change', (e) => {
         appState.selectedDate = e.target.value;
+        localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
         renderDashboard();
       });
 
@@ -697,6 +705,7 @@
         current.setDate(current.getDate() - 1);
         appState.selectedDate = current.toISOString().split('T')[0];
         dateInput.value = appState.selectedDate;
+        localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
         renderDashboard();
       });
 
@@ -705,6 +714,7 @@
         current.setDate(current.getDate() + 1);
         appState.selectedDate = current.toISOString().split('T')[0];
         dateInput.value = appState.selectedDate;
+        localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
         renderDashboard();
       });
 
@@ -722,10 +732,9 @@
           return;
         }
 
-        // Commit state directly to local and remote DB
+        // Save immediately locally and sync to Firebase
         saveStateToStorage();
 
-        // Launch confirmation banner
         triggerSaveDayAlert('Day Saved Successfully!', `${dayLogs.length} records saved for ${appState.selectedDate}`, true);
       });
     }
@@ -911,7 +920,7 @@
             const maxSecs = getMaxLimitSeconds(awayReason, branch);
 
             appState.logs.push({
-              id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7),
+              id: 'log_' + startDate.getTime() + '_' + Math.random().toString(36).substr(2, 7),
               date: dateKey,
               teammate,
               branch,
@@ -934,18 +943,13 @@
           document.getElementById('datePicker').value = firstImportedDate;
         }
 
-        appState.isPendingSave = true;
         recalculateAllLimits();
-        
-        // Save immediately locally
-        try {
-          localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
-        } catch(e) {}
+        saveStateToStorage();
 
         document.getElementById('importRawData').value = '';
         document.getElementById('importModal').classList.add('hidden');
         renderDashboard();
-        triggerSaveDayAlert('Data Imported!', `${parsedCount} records added for ${appState.selectedDate}. Click "Save Day" to sync to Firebase.`, true);
+        triggerSaveDayAlert('Data Imported & Saved!', `${parsedCount} records saved for ${appState.selectedDate}.`, true);
       } else {
         alert('Could not parse rows. Please check tab-separated column format.');
       }
