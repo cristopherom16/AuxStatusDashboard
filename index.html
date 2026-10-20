@@ -139,15 +139,6 @@
         <option value="ALL">All Branches / Countries</option>
       </select>
 
-      <select id="statusFilter" class="bg-midnight text-slate-200 border border-yellow-accent rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-accentYellow">
-        <option value="ALL">All Statuses (Away Reason)</option>
-        <option value="Call Wrap Up">Call Wrap Up</option>
-        <option value="On a call">On a call</option>
-        <option value="Restroom break">Restroom break</option>
-        <option value="On a break">On a break</option>
-        <option value="On lunch">On lunch</option>
-      </select>
-
       <div class="relative flex-1 min-w-[200px]">
         <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
         <input type="text" id="searchTeammate" placeholder="Search Teammate..." class="w-full bg-midnight text-slate-200 border border-yellow-accent rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:border-accentYellow">
@@ -267,14 +258,35 @@
         <table class="w-full text-left text-xs border-collapse">
           <thead>
             <tr class="bg-midnight text-accentYellow font-black uppercase tracking-wider border-b border-yellow-accent">
-              <th class="p-3 border-r border-yellow-accent">Teammate</th>
-              <th class="p-3 border-r border-yellow-accent">Branch</th>
-              <th class="p-3 border-r border-yellow-accent">Away Reason</th>
-              <th class="p-3 border-r border-yellow-accent">Start Time</th>
-              <th class="p-3 border-r border-yellow-accent">End Time</th>
-              <th class="p-3 border-r border-yellow-accent">Duration</th>
-              <th class="p-3 border-r border-yellow-accent">Max Limit</th>
-              <th class="p-3">Compliance Status</th>
+              <th class="p-3 border-r border-yellow-accent">
+                <div class="flex flex-col gap-1">
+                  <span>Teammate</span>
+                  <select id="tableColFilterTeammate" class="bg-midnightCard text-slate-200 text-[10px] border border-yellow-accent/60 rounded px-1.5 py-0.5 outline-none font-normal">
+                    <option value="ALL">All Teammates</option>
+                  </select>
+                </div>
+              </th>
+              <th class="p-3 border-r border-yellow-accent">
+                <div class="flex flex-col gap-1">
+                  <span>Branch</span>
+                  <select id="tableColFilterBranch" class="bg-midnightCard text-slate-200 text-[10px] border border-yellow-accent/60 rounded px-1.5 py-0.5 outline-none font-normal">
+                    <option value="ALL">All Branches</option>
+                  </select>
+                </div>
+              </th>
+              <th class="p-3 border-r border-yellow-accent">
+                <div class="flex flex-col gap-1">
+                  <span>Away Reason</span>
+                  <select id="tableColFilterStatus" class="bg-midnightCard text-slate-200 text-[10px] border border-yellow-accent/60 rounded px-1.5 py-0.5 outline-none font-normal">
+                    <option value="ALL">All Reasons</option>
+                  </select>
+                </div>
+              </th>
+              <th class="p-3 border-r border-yellow-accent align-top">Start Time</th>
+              <th class="p-3 border-r border-yellow-accent align-top">End Time</th>
+              <th class="p-3 border-r border-yellow-accent align-top">Duration</th>
+              <th class="p-3 border-r border-yellow-accent align-top">Max Limit</th>
+              <th class="p-3 align-top">Compliance Status</th>
             </tr>
           </thead>
           <tbody id="logsTableBody" class="divide-y divide-yellow-500/20 text-slate-200">
@@ -503,16 +515,16 @@
 
     // --- THRESHOLD RULE ENGINE ---
     function getMaxLimitSeconds(awayReason, branch) {
-      const status = (awayReason || '').trim();
-      const country = (branch || 'Guatemala').trim();
+      const status = (awayReason || '').trim().toLowerCase();
+      const country = (branch || 'Guatemala').trim().toLowerCase();
 
-      if (status === 'Call Wrap Up') return 15;
-      if (status === 'On a call') return 20 * 60;
-      if (status === 'Restroom break') return 10 * 60;
-      if (status === 'On a break') return 15 * 60;
-      if (status === 'On lunch') {
-        if (country === 'Panama') return 30 * 60;
-        if (country === 'Jamaica') return 45 * 60;
+      if (status === 'call wrap up') return 15;
+      if (status === 'on a call') return 20 * 60;
+      if (status === 'restroom break') return 10 * 60;
+      if (status === 'on a break') return 15 * 60;
+      if (status === 'on lunch') {
+        if (country === 'panama') return 30 * 60;
+        if (country === 'jamaica') return 45 * 60;
         return 60 * 60;
       }
       return 0;
@@ -652,27 +664,92 @@
 
     // --- FILTERS & BRANCH DROPDOWN ---
     function setupFilters() {
-      document.getElementById('branchFilter').addEventListener('change', renderDashboard);
-      document.getElementById('statusFilter').addEventListener('change', renderDashboard);
-      document.getElementById('searchTeammate').addEventListener('input', renderDashboard);
-      
+      document.getElementById('branchFilter').addEventListener('change', () => {
+        syncHeaderFiltersWithMain();
+        renderDashboard();
+      });
+
+      document.getElementById('searchTeammate').addEventListener('input', () => {
+        syncHeaderFiltersWithMain();
+        renderDashboard();
+      });
+
+      document.getElementById('tableColFilterTeammate').addEventListener('change', (e) => {
+        document.getElementById('searchTeammate').value = e.target.value === 'ALL' ? '' : e.target.value;
+        renderDashboard();
+      });
+
+      document.getElementById('tableColFilterBranch').addEventListener('change', (e) => {
+        document.getElementById('branchFilter').value = e.target.value;
+        renderDashboard();
+      });
+
+      document.getElementById('tableColFilterStatus').addEventListener('change', renderDashboard);
+
       document.getElementById('resetFiltersBtn').addEventListener('click', () => {
         document.getElementById('branchFilter').value = 'ALL';
-        document.getElementById('statusFilter').value = 'ALL';
         document.getElementById('searchTeammate').value = '';
+        document.getElementById('tableColFilterTeammate').value = 'ALL';
+        document.getElementById('tableColFilterBranch').value = 'ALL';
+        document.getElementById('tableColFilterStatus').value = 'ALL';
         renderDashboard();
       });
 
       document.getElementById('exportCsvBtn').addEventListener('click', exportLogsCSV);
     }
 
+    function syncHeaderFiltersWithMain() {
+      const branchVal = document.getElementById('branchFilter').value;
+      const searchVal = document.getElementById('searchTeammate').value;
+
+      document.getElementById('tableColFilterBranch').value = branchVal;
+
+      const teammateSelect = document.getElementById('tableColFilterTeammate');
+      if (searchVal === '') {
+        teammateSelect.value = 'ALL';
+      } else {
+        const exists = Array.from(teammateSelect.options).some(o => o.value === searchVal);
+        if (exists) teammateSelect.value = searchVal;
+      }
+    }
+
     function populateBranchDropdown() {
       const select = document.getElementById('branchFilter');
+      const tableSelect = document.getElementById('tableColFilterBranch');
       const currentVal = select.value;
       const branches = Array.from(new Set(Object.values(appState.roster))).sort();
-      select.innerHTML = `<option value="ALL">All Branches / Countries</option>` + 
+
+      const optionsHtml = `<option value="ALL">All Branches / Countries</option>` + 
         branches.map(b => `<option value="${b}">${b}</option>`).join('');
+
+      select.innerHTML = optionsHtml;
       select.value = currentVal;
+
+      if (tableSelect) {
+        tableSelect.innerHTML = `<option value="ALL">All Branches</option>` + 
+          branches.map(b => `<option value="${b}">${b}</option>`).join('');
+        tableSelect.value = currentVal;
+      }
+    }
+
+    function populateTableDropdowns(logsForDate) {
+      const teammateSelect = document.getElementById('tableColFilterTeammate');
+      const statusSelect = document.getElementById('tableColFilterStatus');
+
+      const currentTeammate = teammateSelect.value;
+      const currentStatus = statusSelect.value;
+
+      const teammates = Array.from(new Set(logsForDate.map(l => l.teammate))).sort();
+      const statuses = Array.from(new Set(logsForDate.map(l => l.awayReason))).sort();
+
+      teammateSelect.innerHTML = `<option value="ALL">All Teammates</option>` + 
+        teammates.map(t => `<option value="${t}">${t}</option>`).join('');
+
+      statusSelect.innerHTML = `<option value="ALL">All Reasons</option>` + 
+        statuses.map(s => `<option value="${s}">${s}</option>`).join('');
+
+      if (teammates.includes(currentTeammate)) teammateSelect.value = currentTeammate;
+      if (statuses.includes(currentStatus)) statusSelect.value = currentStatus;
     }
 
     // --- PROCESS PASTE IMPORT ---
@@ -732,8 +809,8 @@
 
     function getFilteredLogs() {
       const branchVal = document.getElementById('branchFilter').value;
-      const statusVal = document.getElementById('statusFilter').value;
       const searchVal = document.getElementById('searchTeammate').value.toLowerCase().trim();
+      const statusVal = document.getElementById('tableColFilterStatus').value;
 
       return appState.logs.filter(log => {
         if (log.date !== appState.selectedDate) return false;
@@ -746,6 +823,9 @@
 
     // --- MAIN RENDER ENGINE ---
     function renderDashboard() {
+      const logsForDate = appState.logs.filter(l => l.date === appState.selectedDate);
+      populateTableDropdowns(logsForDate);
+
       const filteredLogs = getFilteredLogs();
 
       renderKPIs(filteredLogs);
@@ -796,7 +876,7 @@
       const grid = document.getElementById('topOffendersGrid');
 
       grid.innerHTML = statuses.map(status => {
-        const statusLogs = logs.filter(l => l.awayReason === status);
+        const statusLogs = logs.filter(l => l.awayReason.toLowerCase() === status.toLowerCase());
         const violations = statusLogs.filter(l => l.isViolation);
 
         const offenderMap = {};
