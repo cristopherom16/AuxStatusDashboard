@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="es" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -107,7 +107,6 @@
             </button>
           </div>
 
-          <!-- Save Day Button -->
           <button id="saveDayBtn" type="button" class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-accentYellow text-midnight text-xs font-black rounded-md hover:bg-yellow-400 active:scale-95 transition shadow-sm cursor-pointer z-10">
             <i data-lucide="save" class="w-3.5 h-3.5"></i>
             <span>Save Day</span>
@@ -123,6 +122,17 @@
           <i data-lucide="file-plus" class="w-5 h-5"></i>
           <span>Import Data</span>
         </button>
+
+        <!-- Botones de Respaldo Adicionales -->
+        <div class="flex items-center gap-2 border-l border-slate-700 pl-3">
+          <button id="backupDownloadBtn" class="p-2.5 bg-midnight hover:bg-yellow-500/20 text-accentYellow border border-yellow-accent/60 rounded-lg transition" title="Download JSON Backup">
+            <i data-lucide="hard-drive-download" class="w-5 h-5"></i>
+          </button>
+          <label class="p-2.5 bg-midnight hover:bg-yellow-500/20 text-accentYellow border border-yellow-accent/60 rounded-lg transition cursor-pointer" title="Restore JSON Backup">
+            <i data-lucide="hard-drive-upload" class="w-5 h-5"></i>
+            <input type="file" id="backupUploadInput" accept=".json" class="hidden">
+          </label>
+        </div>
 
       </div>
     </header>
@@ -214,7 +224,6 @@
 
     <!-- CHARTS SECTION -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      
       <div class="p-5 rounded-xl bg-midnightCard border-2 border-yellow-accent flex flex-col gap-4">
         <h3 class="text-md font-bold text-accentYellow flex items-center gap-2">
           <i data-lucide="pie-chart" class="w-5 h-5"></i>
@@ -234,7 +243,6 @@
           <canvas id="topBranchOffendersChart"></canvas>
         </div>
       </div>
-
     </div>
 
     <!-- DETAILED LOGS TABLE -->
@@ -427,7 +435,7 @@
     </div>
   </div>
 
-  <!-- JASSCRIPT ENGINE -->
+  <!-- JAVASCRIPT LOCAL PERSISTENCE LOGIC -->
   <script>
     function getLocalDateKey(dateObj) {
       if (!dateObj || isNaN(dateObj.getTime())) return new Date().toISOString().split('T')[0];
@@ -527,7 +535,7 @@
     let topOffendersChartInstance = null;
     let alertTimeout = null;
 
-    // Synchronous LocalStorage Load (Primary Storage)
+    // Direct LocalStorage Synchronous Initialization
     (function loadLocalStorageData() {
       try {
         const localRoster = localStorage.getItem('aux_dashboard_roster');
@@ -607,6 +615,7 @@
       setupDateControls();
       setupModals();
       setupFilters();
+      setupBackupControls();
       populateBranchDropdown();
 
       renderDashboard();
@@ -714,6 +723,53 @@
 
         saveStateToStorage();
         triggerSaveDayAlert('Day Saved Successfully!', `${dayLogs.length} records saved for ${appState.selectedDate}`, true);
+      });
+    }
+
+    function setupBackupControls() {
+      // Exportar Respaldo
+      document.getElementById('backupDownloadBtn').addEventListener('click', () => {
+        const backupData = {
+          roster: appState.roster,
+          logs: appState.logs,
+          selectedDate: appState.selectedDate,
+          exportedAt: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `AUX_Dashboard_Backup_${appState.selectedDate}.json`;
+        a.click();
+        triggerSaveDayAlert('Backup Exported!', 'JSON backup file saved to your device.', true);
+      });
+
+      // Restaurar Respaldo
+      document.getElementById('backupUploadInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const imported = JSON.parse(event.target.result);
+            if (imported.logs && Array.isArray(imported.logs)) {
+              appState.logs = imported.logs;
+              if (imported.roster) appState.roster = imported.roster;
+              if (imported.selectedDate) {
+                appState.selectedDate = imported.selectedDate;
+                document.getElementById('datePicker').value = imported.selectedDate;
+              }
+              saveStateToStorage();
+              renderDashboard();
+              triggerSaveDayAlert('Backup Restored!', 'Data successfully loaded from backup file.', true);
+            } else {
+              alert('Invalid backup file format.');
+            }
+          } catch(err) {
+            alert('Error parsing JSON backup file.');
+          }
+        };
+        reader.readAsText(file);
       });
     }
 
