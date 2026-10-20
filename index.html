@@ -1,1066 +1,1004 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AUX STATUS DASHBOARD</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            midnight: '#090D16',
-                            cardDark: '#0F172A',
-                            yellow: '#FACC15',
-                            yellowHover: '#EAB308',
-                            blue: '#0284C7',
-                            red: '#EF4444',
-                            green: '#10B981'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Base Theme Styles */
-        html.dark body {
-            background-color: #090D16;
-            color: #F8FAFC;
-        }
-        html.dark .bg-midnight-card {
-            background-color: #0F172A;
-        }
-        html.dark .bg-midnight-input {
-            background-color: #090D16;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AUX STATUS DASHBOARD</title>
 
-        html:not(.dark) body {
-            background-color: #F8FAFC;
-            color: #0F172A;
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            midnight: '#090d16',
+            midnightCard: '#0f172a',
+            midnightHover: '#1e293b',
+            accentYellow: '#facc15',
+          }
         }
-        html:not(.dark) .bg-midnight-card {
-            background-color: #FFFFFF;
-        }
-        html:not(.dark) .bg-midnight-input {
-            background-color: #F1F5F9;
-        }
+      }
+    }
+  </script>
 
-        /* Precise 10mm Margin Offsets based on user screenshot */
-        .layout-container {
-            padding-left: calc(10mm + 52px);
-            padding-right: 10mm;
-            width: 100%;
-        }
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
-        /* Yellow Borders Override across UI */
-        .yellow-border {
-            border-color: rgba(250, 204, 21, 0.4) !important;
-        }
-        .yellow-border-strong {
-            border-color: #FACC15 !important;
-        }
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #facc15;
+    }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: rgba(15, 23, 42, 0.6);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #FACC15;
-            border-radius: 4px;
-        }
-    </style>
+    /* Yellow Gridlines and Border Accents */
+    .border-yellow-accent {
+      border-color: #facc15 !important;
+    }
+    
+    .grid-yellow-cell {
+      border: 1px solid #facc15 !important;
+    }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col antialiased transition-colors duration-200 pb-16">
+<body class="bg-midnight text-slate-100 min-h-screen transition-colors duration-200 antialiased relative">
+
+  <!-- MAIN CONTAINER WITH PRECISE HORIZONTAL MARGINS -->
+  <!-- pl-[calc(10mm+52px)]: Ends 10mm to the right of the 40px fixed toggle button on the left -->
+  <!-- pr-[10mm]: Ends 10mm from the right viewport edge -->
+  <div class="w-full min-h-screen pl-[calc(10mm+52px)] pr-[10mm] py-6 flex flex-col gap-6">
 
     <!-- TOP HEADER -->
-    <header class="bg-midnight-card border-b yellow-border sticky top-0 z-30 layout-container py-4 shadow-xl">
-        <div class="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            
-            <!-- BRANDING & TITLE -->
-            <div class="flex items-center space-x-3">
-                <div class="p-2.5 bg-yellow-400/10 border yellow-border rounded-xl text-yellow-400 shadow-inner flex items-center justify-center">
-                    <!-- Alarm / Stopwatch Icon -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FACC15" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-timer animate-pulse">
-                        <line x1="10" x2="14" y1="2" y2="2"/>
-                        <line x1="12" x2="15" y1="14" y2="11"/>
-                        <circle cx="12" cy="14" r="8"/>
-                    </svg>
-                </div>
-                <div>
-                    <!-- Title with AUX and DASHBOARD in bright yellow -->
-                    <h1 class="text-2xl font-black tracking-wider text-yellow-400 flex items-center gap-2">
-                        AUX STATUS DASHBOARD
-                    </h1>
-                    <p class="text-xs text-slate-400 font-medium">Operations Compliance & Real-time Overtime Tracking</p>
-                </div>
-            </div>
-
-            <!-- CONTROLS & DATE NAVIGATOR -->
-            <div class="flex flex-wrap items-center gap-3">
-                
-                <!-- Date Selector with Yellow Icons and Arrows -->
-                <div class="flex items-center bg-midnight-input border yellow-border rounded-lg p-1 shadow-inner">
-                    <button id="btnPrevDay" title="Previous Day" class="p-1.5 text-yellow-400 hover:scale-110 transition">
-                        <i data-lucide="chevron-left" class="w-5 h-5 text-yellow-400"></i>
-                    </button>
-                    <div class="flex items-center px-2 space-x-2">
-                        <i data-lucide="calendar" class="w-4 h-4 text-yellow-400"></i>
-                        <input type="date" id="datePicker" class="bg-transparent text-sm font-bold text-yellow-400 focus:outline-none cursor-pointer">
-                    </div>
-                    <button id="btnNextDay" title="Next Day" class="p-1.5 text-yellow-400 hover:scale-110 transition">
-                        <i data-lucide="chevron-right" class="w-5 h-5 text-yellow-400"></i>
-                    </button>
-                </div>
-
-                <!-- Teammates CRUD Button -->
-                <button id="openTeammatesBtn" class="flex items-center gap-2 bg-midnight-input hover:bg-yellow-400/10 border yellow-border text-yellow-400 font-bold px-3.5 py-2 rounded-lg transition text-sm">
-                    <i data-lucide="users" class="w-4 h-4 text-yellow-400"></i>
-                    <span>Manage Teammates</span>
-                </button>
-
-                <!-- Import Button -->
-                <button id="openImportBtn" class="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black px-4 py-2 rounded-lg transition shadow-lg shadow-yellow-400/20 text-sm">
-                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-                    <span>Import Data</span>
-                </button>
-            </div>
+    <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-xl bg-midnightCard border-2 border-yellow-accent shadow-lg shadow-yellow-500/10">
+      
+      <!-- Title Section with Yellow Alarm Icon -->
+      <div class="flex items-center gap-3">
+        <div class="p-3 bg-yellow-500/20 rounded-xl border border-yellow-accent text-accentYellow animate-pulse">
+          <i data-lucide="alarm-clock" class="w-8 h-8"></i>
         </div>
+        <div>
+          <h1 class="text-2xl md:text-3xl font-black tracking-wider text-accentYellow uppercase flex items-center gap-2">
+            AUX STATUS DASHBOARD
+          </h1>
+          <p class="text-xs text-slate-400 font-medium">Operations Compliance & Real-Time Overtime Tracking</p>
+        </div>
+      </div>
+
+      <!-- Date Navigator & Action Controls -->
+      <div class="flex flex-wrap items-center gap-3">
+        
+        <!-- Date Navigator -->
+        <div class="flex items-center bg-midnight border-2 border-yellow-accent rounded-lg p-1 text-accentYellow">
+          <button id="prevDateBtn" class="p-2 hover:bg-yellow-500/20 rounded transition text-accentYellow" title="Previous Day">
+            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+          </button>
+          
+          <div class="flex items-center gap-2 px-3">
+            <i data-lucide="calendar" class="w-5 h-5 text-accentYellow"></i>
+            <input type="date" id="datePicker" class="bg-transparent text-accentYellow font-bold border-none outline-none cursor-pointer focus:ring-0">
+          </div>
+
+          <button id="nextDateBtn" class="p-2 hover:bg-yellow-500/20 rounded transition text-accentYellow" title="Next Day">
+            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Manage Teammates Button (Password Protected) -->
+        <button id="openTeammatesBtn" class="flex items-center gap-2 px-4 py-2.5 bg-midnight hover:bg-yellow-500/20 text-accentYellow border-2 border-yellow-accent font-bold rounded-lg transition duration-150 shadow-sm">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span>Manage Teammates</span>
+        </button>
+
+        <!-- Import Data Modal Trigger -->
+        <button id="openImportBtn" class="flex items-center gap-2 px-5 py-2.5 bg-accentYellow text-midnight font-black rounded-lg hover:bg-yellow-400 transition duration-150 shadow-md shadow-yellow-500/20">
+          <i data-lucide="file-plus" class="w-5 h-5"></i>
+          <span>Import Data</span>
+        </button>
+
+      </div>
     </header>
 
-    <!-- MAIN CONTENT CONTAINER WITH PRECISE FULL-WIDTH MARGINS -->
-    <main class="flex-1 w-full layout-container py-6 space-y-6">
+    <!-- FILTER BAR -->
+    <div class="flex flex-wrap items-center gap-4 p-4 rounded-xl bg-midnightCard border border-yellow-accent">
+      <div class="flex items-center gap-2 text-accentYellow font-bold text-sm">
+        <i data-lucide="filter" class="w-4 h-4"></i>
+        <span>Active Filters:</span>
+      </div>
 
-        <!-- FILTERS BAR -->
-        <div class="bg-midnight-card border yellow-border rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-md w-full">
-            <div class="flex items-center gap-2 text-yellow-400 font-bold text-sm">
-                <i data-lucide="filter" class="w-4 h-4 text-yellow-400"></i>
-                <span>Active Filters:</span>
-            </div>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1 max-w-3xl">
-                <!-- Branch Filter -->
-                <select id="filterBranch" class="bg-midnight-input border yellow-border text-xs rounded-lg p-2.5 focus:border-yellow-400 focus:outline-none">
-                    <option value="ALL">All Branches / Countries</option>
-                    <option value="Guatemala">Guatemala</option>
-                    <option value="Panama">Panama</option>
-                    <option value="Mexico">Mexico</option>
-                    <option value="Jamaica">Jamaica</option>
-                    <option value="Philippines">Philippines</option>
-                    <option value="Colombia">Colombia</option>
-                    <option value="USA">USA</option>
-                </select>
+      <select id="branchFilter" class="bg-midnight text-slate-200 border border-yellow-accent rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-accentYellow">
+        <option value="ALL">All Branches / Countries</option>
+      </select>
 
-                <!-- Status Filter -->
-                <select id="filterStatus" class="bg-midnight-input border yellow-border text-xs rounded-lg p-2.5 focus:border-yellow-400 focus:outline-none">
-                    <option value="ALL">All Statuses (Away Reason)</option>
-                    <option value="On lunch">On lunch</option>
-                    <option value="Restroom break">Restroom break</option>
-                    <option value="On a break">On a break</option>
-                    <option value="Call Wrap Up">Call Wrap Up</option>
-                    <option value="On a call">On a call</option>
-                </select>
+      <select id="statusFilter" class="bg-midnight text-slate-200 border border-yellow-accent rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-accentYellow">
+        <option value="ALL">All Statuses (Away Reason)</option>
+        <option value="Call Wrap Up">Call Wrap Up</option>
+        <option value="On a call">On a call</option>
+        <option value="Restroom break">Restroom break</option>
+        <option value="On a break">On a break</option>
+        <option value="On lunch">On lunch</option>
+      </select>
 
-                <!-- Search Input -->
-                <div class="relative">
-                    <input type="text" id="filterSearch" placeholder="Search Teammate..." class="w-full bg-midnight-input border yellow-border text-xs rounded-lg p-2.5 pl-8 focus:border-yellow-400 focus:outline-none">
-                    <i data-lucide="search" class="w-4 h-4 text-yellow-400 absolute left-2.5 top-3"></i>
-                </div>
-            </div>
+      <div class="relative flex-1 min-w-[200px]">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+        <input type="text" id="searchTeammate" placeholder="Search Teammate..." class="w-full bg-midnight text-slate-200 border border-yellow-accent rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:border-accentYellow">
+      </div>
 
-            <button id="btnResetFilters" class="text-xs text-yellow-400 hover:underline font-semibold transition flex items-center gap-1">
-                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-yellow-400"></i>
-                <span>Reset Filters</span>
-            </button>
+      <button id="resetFiltersBtn" class="px-3 py-1.5 text-xs text-accentYellow hover:underline font-semibold ml-auto">
+        Reset Filters
+      </button>
+    </div>
+
+    <!-- METRICS OVERVIEW CARDS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <div class="p-4 rounded-xl bg-midnightCard border border-yellow-accent flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Records</p>
+          <h3 id="statTotalRecords" class="text-2xl font-black text-accentYellow mt-1">0</h3>
+          <p id="statActiveTeammates" class="text-xs text-slate-400 mt-1">0 Active Teammates</p>
         </div>
-
-        <!-- KPI STAT CARDS -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-            
-            <!-- KPI 1 -->
-            <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex items-center justify-between relative overflow-hidden">
-                <div class="space-y-1 z-10">
-                    <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Total Records</p>
-                    <h3 id="kpiTotalRecords" class="text-3xl font-black text-yellow-400">0</h3>
-                    <p id="kpiActiveTeammates" class="text-xs text-slate-400">0 Active Teammates</p>
-                </div>
-                <div class="p-3 bg-yellow-400/10 text-yellow-400 rounded-xl border yellow-border">
-                    <i data-lucide="users" class="w-7 h-7"></i>
-                </div>
-            </div>
-
-            <!-- KPI 2 -->
-            <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex items-center justify-between relative overflow-hidden">
-                <div class="space-y-1 z-10">
-                    <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Total AUX Time</p>
-                    <h3 id="kpiTotalTime" class="text-3xl font-black text-yellow-400">0s</h3>
-                    <p class="text-xs text-slate-400">Logged for selected filters</p>
-                </div>
-                <div class="p-3 bg-yellow-400/10 text-yellow-400 rounded-xl border yellow-border">
-                    <i data-lucide="clock" class="w-7 h-7"></i>
-                </div>
-            </div>
-
-            <!-- KPI 3 -->
-            <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex items-center justify-between relative overflow-hidden">
-                <div class="space-y-1 z-10">
-                    <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Threshold Violations</p>
-                    <h3 id="kpiTotalOffences" class="text-3xl font-black text-red-500">0</h3>
-                    <p id="kpiOvertimeTotal" class="text-xs text-yellow-400 font-bold">+0 min overtime</p>
-                </div>
-                <div class="p-3 bg-red-500/10 text-red-400 rounded-xl border border-red-500/30">
-                    <i data-lucide="alert-triangle" class="w-7 h-7"></i>
-                </div>
-            </div>
-
-            <!-- KPI 4 -->
-            <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex items-center justify-between relative overflow-hidden">
-                <div class="space-y-1 z-10">
-                    <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Top Overall Offender</p>
-                    <h3 id="kpiTopOffenderName" class="text-lg font-extrabold text-red-400 truncate max-w-[150px]">None</h3>
-                    <p id="kpiTopOffenderDetails" class="text-xs text-slate-400">0 violations</p>
-                </div>
-                <div class="p-3 bg-red-500/10 text-red-400 rounded-xl border border-red-500/30">
-                    <i data-lucide="user-x" class="w-7 h-7"></i>
-                </div>
-            </div>
-
+        <div class="p-3 bg-yellow-500/10 rounded-lg text-accentYellow border border-yellow-accent">
+          <i data-lucide="list-ordered" class="w-6 h-6"></i>
         </div>
+      </div>
 
-        <!-- TOP OFFENDERS BY STATUS CARDS SECTION -->
-        <div class="w-full">
-            <div class="flex items-center justify-between mb-3">
-                <h2 class="text-lg font-black text-yellow-400 flex items-center gap-2">
-                    <i data-lucide="shield-alert" class="w-5 h-5 text-yellow-400"></i>
-                    TOP OFFENDERS BY STATUS
-                </h2>
-                <span class="text-xs text-slate-400 font-medium">Highest overtime offenders per status category</span>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 w-full" id="topOffendersGrid">
-                <!-- Dynamically populated -->
-            </div>
+      <div class="p-4 rounded-xl bg-midnightCard border border-yellow-accent flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total AUX Time</p>
+          <h3 id="statTotalAuxTime" class="text-2xl font-black text-accentYellow mt-1">0m</h3>
+          <p class="text-xs text-slate-400 mt-1">Logged for selected date</p>
         </div>
-
-        <!-- CHARTS SECTION -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-            
-            <!-- Chart 1: Time distribution by Reason -->
-            <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex flex-col">
-                <h3 class="text-sm font-black text-yellow-400 mb-4 flex items-center gap-2">
-                    <i data-lucide="pie-chart" class="w-4 h-4 text-yellow-400"></i>
-                    AUX Time Distribution (Minutes)
-                </h3>
-                <div class="flex-1 relative min-h-[240px] flex items-center justify-center">
-                    <canvas id="chartStatusDist"></canvas>
-                </div>
-            </div>
-
-            <!-- Chart 2: Top 15 Branch Offenders (Overtime) -->
-            <div class="bg-midnight-card border yellow-border rounded-xl p-5 shadow-md flex flex-col lg:col-span-2">
-                <h3 class="text-sm font-black text-yellow-400 mb-4 flex items-center gap-2">
-                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-yellow-400"></i>
-                    Top 15 Branch Offenders (Overtime in Minutes)
-                </h3>
-                <div class="flex-1 relative min-h-[240px] flex items-center justify-center">
-                    <canvas id="chartTop15BranchOffenders"></canvas>
-                </div>
-            </div>
-
+        <div class="p-3 bg-yellow-500/10 rounded-lg text-accentYellow border border-yellow-accent">
+          <i data-lucide="clock" class="w-6 h-6"></i>
         </div>
+      </div>
 
-        <!-- DATA TABLE SECTION -->
-        <div class="bg-midnight-card border yellow-border rounded-xl shadow-md overflow-hidden w-full">
-            <div class="p-4 border-b yellow-border flex flex-wrap items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="list" class="w-5 h-5 text-yellow-400"></i>
-                    <h3 class="text-md font-black text-yellow-400">Detailed Activity Logs</h3>
-                    <span id="tableRecordCount" class="bg-midnight-input border yellow-border text-yellow-400 text-xs px-2.5 py-0.5 rounded-full font-mono font-bold">0</span>
-                </div>
-                
-                <div class="flex items-center gap-2">
-                    <button id="btnExportCSV" class="text-xs bg-midnight-input hover:bg-yellow-400/10 border yellow-border text-yellow-400 font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
-                        <i data-lucide="download" class="w-3.5 h-3.5 text-yellow-400"></i>
-                        <span>Export CSV</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Table Container with Yellow Gridlines -->
-            <div class="overflow-x-auto w-full">
-                <table class="w-full text-left text-xs border-collapse">
-                    <thead>
-                        <tr class="bg-midnight-input text-yellow-400 uppercase font-black border-b yellow-border">
-                            <th class="py-3 px-4 border-r yellow-border">Teammate</th>
-                            <th class="py-3 px-4 border-r yellow-border">Branch</th>
-                            <th class="py-3 px-4 border-r yellow-border">Away Reason</th>
-                            <th class="py-3 px-4 border-r yellow-border">Start Time (Chicago)</th>
-                            <th class="py-3 px-4 border-r yellow-border">End Time (Chicago)</th>
-                            <th class="py-3 px-4 border-r yellow-border">Duration</th>
-                            <th class="py-3 px-4 border-r yellow-border">Max Limit</th>
-                            <th class="py-3 px-4 text-center">Compliance Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dataTableBody" class="divide-y yellow-border font-medium">
-                        <!-- Populated dynamically -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Empty State -->
-            <div id="tableEmptyState" class="hidden p-12 text-center text-slate-400 space-y-3">
-                <i data-lucide="clipboard-paste" class="w-12 h-12 mx-auto text-yellow-400"></i>
-                <p class="text-base font-bold text-yellow-400">No logs found for the selected date or search criteria.</p>
-                <p class="text-xs text-slate-400">Click "Import Data" to paste new logs or clear active filters.</p>
-            </div>
+      <div class="p-4 rounded-xl bg-midnightCard border border-yellow-accent flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Threshold Violations</p>
+          <h3 id="statTotalViolations" class="text-2xl font-black text-red-500 mt-1">0</h3>
+          <p id="statTotalOvertime" class="text-xs text-red-400 mt-1">+0 min overtime</p>
         </div>
+        <div class="p-3 bg-red-500/10 rounded-lg text-red-500 border border-red-500/40">
+          <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+        </div>
+      </div>
 
-    </main>
+      <div class="p-4 rounded-xl bg-midnightCard border border-yellow-accent flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Top Overall Offender</p>
+          <h3 id="statTopOffender" class="text-lg font-black text-accentYellow mt-1 truncate max-w-[150px]">None</h3>
+          <p id="statTopOffenderDetails" class="text-xs text-slate-400 mt-1">0 violations</p>
+        </div>
+        <div class="p-3 bg-yellow-500/10 rounded-lg text-accentYellow border border-yellow-accent">
+          <i data-lucide="user-x" class="w-6 h-6"></i>
+        </div>
+      </div>
 
-    <!-- FIXED BOTTOM-LEFT LIGHT/DARK MODE TOGGLE BUTTON (Placed exact 10mm from left screen edge) -->
-    <div class="fixed bottom-4 left-[10mm] z-50">
-        <button id="themeToggleBtn" class="p-2.5 bg-midnight-card border yellow-border rounded-full shadow-2xl text-yellow-400 hover:scale-110 transition flex items-center justify-center">
-            <i data-lucide="sun" id="iconSun" class="w-5 h-5 text-yellow-400 hidden"></i>
-            <i data-lucide="moon" id="iconMoon" class="w-5 h-5 text-yellow-400"></i>
+    </div>
+
+    <!-- TOP OFFENDERS BY STATUS SECTION -->
+    <div class="p-5 rounded-xl bg-midnightCard border-2 border-yellow-accent flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2 text-accentYellow font-black tracking-wide text-lg">
+          <i data-lucide="shield-alert" class="w-5 h-5"></i>
+          <span>TOP OFFENDERS BY STATUS</span>
+        </div>
+        <span class="text-xs text-slate-400">Highest overtime offenders per status category</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" id="topOffendersGrid">
+        <!-- Dynamic Cards Inserted Here via JS -->
+      </div>
+    </div>
+
+    <!-- CHARTS SECTION -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- Chart 1: AUX Time Distribution -->
+      <div class="p-5 rounded-xl bg-midnightCard border-2 border-yellow-accent flex flex-col gap-4">
+        <h3 class="text-md font-bold text-accentYellow flex items-center gap-2">
+          <i data-lucide="pie-chart" class="w-5 h-5"></i>
+          <span>AUX Time Distribution (Minutes)</span>
+        </h3>
+        <div class="relative h-64 w-full flex items-center justify-center">
+          <canvas id="auxDistributionChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Top 15 Branch Offenders -->
+      <div class="p-5 rounded-xl bg-midnightCard border-2 border-yellow-accent flex flex-col gap-4">
+        <h3 class="text-md font-bold text-accentYellow flex items-center gap-2">
+          <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+          <span>Top 15 Branch Offenders (Overtime in Minutes)</span>
+        </h3>
+        <div class="relative h-64 w-full">
+          <canvas id="topBranchOffendersChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- DETAILED LOGS TABLE -->
+    <div class="p-5 rounded-xl bg-midnightCard border-2 border-yellow-accent flex flex-col gap-4">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <h3 class="text-lg font-black text-accentYellow flex items-center gap-2">
+          <i data-lucide="table" class="w-5 h-5"></i>
+          <span>Detailed Activity Logs</span>
+          <span id="logsCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-accentYellow border border-yellow-accent">0</span>
+        </h3>
+        <button id="exportCsvBtn" class="px-3 py-1.5 bg-midnight hover:bg-yellow-500/20 text-accentYellow border border-yellow-accent text-xs font-bold rounded-lg transition flex items-center gap-1.5">
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Export CSV</span>
         </button>
+      </div>
+
+      <div class="overflow-x-auto rounded-lg border border-yellow-accent">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-midnight text-accentYellow font-black uppercase tracking-wider border-b border-yellow-accent">
+              <th class="p-3 border-r border-yellow-accent">Teammate</th>
+              <th class="p-3 border-r border-yellow-accent">Branch</th>
+              <th class="p-3 border-r border-yellow-accent">Away Reason</th>
+              <th class="p-3 border-r border-yellow-accent">Start Time</th>
+              <th class="p-3 border-r border-yellow-accent">End Time</th>
+              <th class="p-3 border-r border-yellow-accent">Duration</th>
+              <th class="p-3 border-r border-yellow-accent">Max Limit</th>
+              <th class="p-3">Compliance Status</th>
+            </tr>
+          </thead>
+          <tbody id="logsTableBody" class="divide-y divide-yellow-500/20 text-slate-200">
+            <!-- Dynamic Rows -->
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- TEAMMATE MANAGEMENT MODAL -->
-    <div id="teammatesModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-midnight-card border yellow-border rounded-2xl max-w-3xl w-full p-6 space-y-4 shadow-2xl relative max-h-[85vh] flex flex-col">
-            <button id="closeTeammatesBtn" class="absolute top-4 right-4 text-slate-400 hover:text-yellow-400 transition">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
+  </div>
 
-            <div class="flex items-center space-x-3">
-                <div class="p-2 bg-yellow-400/10 text-yellow-400 rounded-lg border yellow-border">
-                    <i data-lucide="users" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h3 class="text-lg font-black text-yellow-400">Manage Teammates & Branches</h3>
-                    <p class="text-xs text-slate-400">Add, edit, or remove teammates from active roster.</p>
-                </div>
-            </div>
+  <!-- FIXED THEME TOGGLE ICON (BOTTOM LEFT) -->
+  <button id="themeToggleBtn" class="fixed bottom-[10mm] left-[10mm] z-50 p-2.5 rounded-full bg-midnightCard border-2 border-yellow-accent text-accentYellow hover:bg-yellow-500/20 shadow-lg shadow-black/50 transition duration-200" title="Toggle Light / Dark Mode">
+    <i data-lucide="sun" id="themeIconSun" class="w-5 h-5 hidden"></i>
+    <i data-lucide="moon" id="themeIconMoon" class="w-5 h-5"></i>
+  </button>
 
-            <!-- Form -->
-            <div class="bg-midnight-input border yellow-border rounded-xl p-4 space-y-3">
-                <h4 id="tmFormTitle" class="text-xs font-bold text-yellow-400 uppercase">Add New Teammate</h4>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <input type="text" id="tmNameInput" placeholder="Full Name..." class="bg-midnight-card border yellow-border text-xs rounded-lg p-2.5 focus:outline-none">
-                    <select id="tmBranchSelect" class="bg-midnight-card border yellow-border text-xs rounded-lg p-2.5 focus:outline-none">
-                        <option value="Guatemala">Guatemala</option>
-                        <option value="Panama">Panama</option>
-                        <option value="Mexico">Mexico</option>
-                        <option value="Jamaica">Jamaica</option>
-                        <option value="Philippines">Philippines</option>
-                        <option value="Colombia">Colombia</option>
-                        <option value="USA">USA</option>
-                    </select>
-                    <div class="flex gap-2">
-                        <button id="tmSaveBtn" class="flex-1 bg-yellow-400 hover:bg-yellow-500 text-slate-950 font-black text-xs py-2 px-3 rounded-lg transition">
-                            Save
-                        </button>
-                        <button id="tmCancelEditBtn" class="hidden bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs py-2 px-3 rounded-lg transition">
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            </div>
+  <!-- PASSWORD PROMPT MODAL -->
+  <div id="passwordModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-midnightCard border-2 border-yellow-accent rounded-xl w-full max-w-md p-6 flex flex-col gap-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-yellow-accent pb-3">
+        <h3 class="text-lg font-black text-accentYellow flex items-center gap-2">
+          <i data-lucide="lock" class="w-5 h-5"></i>
+          <span>Management Access</span>
+        </h3>
+        <button id="closePasswordModal" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
 
-            <!-- List -->
-            <div class="flex-1 flex flex-col min-h-0 space-y-2">
-                <input type="text" id="tmSearchInput" placeholder="Filter roster list..." class="bg-midnight-input border yellow-border text-xs rounded-lg p-2 focus:outline-none w-full">
-                
-                <div class="flex-1 overflow-y-auto border yellow-border rounded-xl">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-midnight-input text-yellow-400 sticky top-0 border-b yellow-border">
-                            <tr>
-                                <th class="py-2.5 px-3">Teammate Name</th>
-                                <th class="py-2.5 px-3">Branch / Country</th>
-                                <th class="py-2.5 px-3 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tmTableBody" class="divide-y yellow-border">
-                            <!-- Populated dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+      <p class="text-xs text-slate-300">Enter the management password to edit or delete teammate configurations:</p>
+
+      <form id="passwordForm" class="flex flex-col gap-3">
+        <div>
+          <input type="password" id="passwordInput" placeholder="Enter password..." class="w-full bg-midnight text-slate-100 border border-yellow-accent rounded-lg p-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-accentYellow">
+          <p id="passwordError" class="text-xs text-red-500 font-bold mt-1.5 hidden">Incorrect password. Please try again.</p>
         </div>
-    </div>
 
-    <!-- IMPORT MODAL -->
-    <div id="importModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-midnight-card border yellow-border rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl relative">
-            <button id="closeImportBtn" class="absolute top-4 right-4 text-slate-400 hover:text-yellow-400 transition">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
-
-            <div class="flex items-center space-x-3">
-                <div class="p-2 bg-yellow-400/10 text-yellow-400 rounded-lg border yellow-border">
-                    <i data-lucide="clipboard-paste" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h3 class="text-lg font-black text-yellow-400">Import AUX Log Records</h3>
-                    <p class="text-xs text-slate-400">Paste tab-delimited or spreadsheet tables directly below.</p>
-                </div>
-            </div>
-
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-xs font-bold text-yellow-400 mb-1">Target Date for Imported Logs:</label>
-                    <input type="date" id="importDatePicker" class="bg-midnight-input border yellow-border text-sm text-yellow-400 font-bold rounded-lg p-2.5 w-full focus:outline-none">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-yellow-400 mb-1">
-                        Paste table data below:
-                    </label>
-                    <textarea id="importRawData" rows="8" placeholder="Period started at (America/Chicago)	Period ended at (America/Chicago)	Away reason	Teammate&#10;2026-10-20 08:00:00	2026-10-20 09:05:00	On lunch	Omar Jimenez&#10;2026-10-20 09:10:00	2026-10-20 09:30:00	Restroom break	Kevin Williams" class="w-full bg-midnight-input border yellow-border rounded-lg p-3 text-xs font-mono text-slate-200 focus:outline-none"></textarea>
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-3 pt-2">
-                <button id="cancelImportBtn" class="px-4 py-2 text-xs font-bold text-slate-400 hover:bg-slate-800 rounded-lg transition">Cancel</button>
-                <button id="processImportBtn" class="px-5 py-2 text-xs font-black bg-yellow-400 hover:bg-yellow-500 text-slate-950 rounded-lg shadow-md transition flex items-center gap-2">
-                    <i data-lucide="check" class="w-4 h-4"></i>
-                    <span>Process & Import Logs</span>
-                </button>
-            </div>
+        <div class="flex justify-end gap-2 mt-2">
+          <button type="button" id="cancelPasswordBtn" class="px-4 py-2 text-xs font-bold border border-slate-600 rounded-lg hover:bg-slate-800">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-accentYellow text-midnight text-xs font-black rounded-lg hover:bg-yellow-400">Unlock</button>
         </div>
+      </form>
     </div>
+  </div>
 
-    <!-- JAVASCRIPT LOGIC -->
-    <script>
-        // --- 1. FULL TEAMMATE & BRANCH MAPPING ---
-        let MATE_BRANCH_MAP = {
-            // Philippines
-            "MJ Rafols": "Philippines", "Ann Dayuta": "Philippines", "Marianne Abigaile": "Philippines",
-            "Aaron Gozum": "Philippines", "Kyle Andrei Abad": "Philippines",
+  <!-- MANAGE TEAMMATES MODAL -->
+  <div id="teammatesModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-midnightCard border-2 border-yellow-accent rounded-xl w-full max-w-2xl p-6 flex flex-col gap-4 shadow-2xl max-h-[90vh]">
+      <div class="flex items-center justify-between border-b border-yellow-accent pb-3">
+        <h3 class="text-lg font-black text-accentYellow flex items-center gap-2">
+          <i data-lucide="user-cog" class="w-5 h-5"></i>
+          <span>Manage Teammates & Branches</span>
+        </h3>
+        <button id="closeTeammatesModal" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
 
-            // Mexico
-            "Omar Jimenez": "Mexico", "Daniel Pelayo": "Mexico", "Kevin Gordoa": "Mexico",
-            "Raul Tornel Garcia": "Mexico", "Galilea Gutierrez": "Mexico", "Fernando Ramirez": "Mexico",
-            "Sebastian Chavez": "Mexico", "Cesar Larios": "Mexico", "Irving Reyes": "Mexico",
-            "Israel Calderon Arias": "Mexico", "Danae Fergoso": "Mexico", "Maria Saucedo": "Mexico",
-            "Alondra Mendoza": "Mexico",
+      <!-- Add New Teammate Form -->
+      <form id="addTeammateForm" class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-midnight p-3 rounded-lg border border-yellow-accent">
+        <input type="text" id="newTeammateName" placeholder="Teammate Name..." required class="bg-midnightCard border border-yellow-accent rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none">
+        <select id="newTeammateBranch" required class="bg-midnightCard border border-yellow-accent rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none">
+          <option value="Guatemala">Guatemala</option>
+          <option value="Panama">Panama</option>
+          <option value="Mexico">Mexico</option>
+          <option value="Jamaica">Jamaica</option>
+          <option value="Philippines">Philippines</option>
+          <option value="Colombia">Colombia</option>
+          <option value="USA">USA</option>
+        </select>
+        <button type="submit" class="bg-accentYellow text-midnight font-bold px-3 py-1.5 rounded text-xs hover:bg-yellow-400 flex items-center justify-center gap-1">
+          <i data-lucide="plus" class="w-4 h-4"></i> Add Teammate
+        </button>
+      </form>
 
-            // Panama
-            "Kevin Williams": "Panama", "Benneth Smith": "Panama", "Zinedine Moscote": "Panama",
-            "Dean Spencer": "Panama", "Marie Claire Perez": "Panama", "Sonia Jimenez": "Panama",
-            "Kellyneth Estrada": "Panama", "Stephanie Temple": "Panama", "Felix Lowe": "Panama",
-            "Marcos Espinosa": "Panama", "Jesus Rios": "Panama", "Alexander Santamaria": "Panama",
-            "Marielys Tejada": "Panama", "Dana Redwood": "Panama", "Lelburn Gordon": "Panama",
-            "Keyren Fuertes": "Panama", "Jose Rodriguez Rosas": "Panama",
+      <!-- Teammates Search & List -->
+      <div class="relative">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
+        <input type="text" id="searchRosterInput" placeholder="Filter roster..." class="w-full bg-midnight border border-yellow-accent rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none">
+      </div>
 
-            // Guatemala
-            "Ariel Antonio Yaegui Mazate": "Guatemala", "Emilia Mishel Chajon Perez": "Guatemala",
-            "Rudy Herrera": "Guatemala", "Cesar David Lopez Colaj": "Guatemala", "Jorge Barillas": "Guatemala",
-            "Yossi Aharon Martinez Garcia": "Guatemala", "Lynda Izabel Escobedo de Leon": "Guatemala",
-            "Daniel Hernandez": "Guatemala", "Carlos Giovanni Flores Rios": "Guatemala",
-            "Kathering Santos": "Guatemala", "Luis Ajche": "Guatemala", "Marco Lopez": "Guatemala",
-            "Jose Arriaga": "Guatemala", "Melanie Annelisse Garcia Marin": "Guatemala",
-            "Jonathan Pirir": "Guatemala", "Juan Avedano": "Guatemala", "Kener Lee": "Guatemala",
-            "Acsa Esquivel": "Guatemala", "Edgar Palomo": "Guatemala", "Kevin Acabal": "Guatemala",
-            "Manfredo Monterroso": "Guatemala", "Luis R": "Guatemala", "Omar Gomez": "Guatemala",
-            "Josue Sucuc": "Guatemala", "Gustavo Lopez": "Guatemala", "Marvin Sandoval": "Guatemala",
-            "Samantha Chinchilla": "Guatemala", "Andy Pineda": "Guatemala", "Esvin Gomez": "Guatemala",
-            "Celina Ramirez": "Guatemala", "Karen Medinilla": "Guatemala", "Iverth Monterroso": "Guatemala",
-            "Lucia Herrera": "Guatemala", "Elias": "Guatemala", "Mónica Alejandra López Prado": "Guatemala",
-            "Brandon Vasquez": "Guatemala", "Alex Coyote": "Guatemala", "Pablo Valenzuela": "Guatemala",
-            "Otto De La Cruz": "Guatemala", "Emely Hernandez": "Guatemala", "Eunice Sir": "Guatemala",
-            "Edgar Linares": "Guatemala", "Kevin Lopez": "Guatemala", "Diana Abigail Orozco Alvarez": "Guatemala",
-            "Jorge Garrido": "Guatemala", "Manny Juarez": "Guatemala", "Luis Gerardo Escobar Gonzalez": "Guatemala",
-            "Ana Melendez": "Guatemala", "Pablo Saquilmer": "Guatemala", "Diego Gonzalez": "Guatemala",
-            "Sharon Olivares": "Guatemala", "Jonathan Mejia": "Guatemala", "Cristopher Orellana": "Guatemala",
-            "Sebastian Q": "Guatemala", "Jorge Saban": "Guatemala",
+      <div class="overflow-y-auto max-h-[50vh] rounded-lg border border-yellow-accent">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-midnight text-accentYellow uppercase border-b border-yellow-accent">
+              <th class="p-2.5 border-r border-yellow-accent">Teammate Name</th>
+              <th class="p-2.5 border-r border-yellow-accent">Branch</th>
+              <th class="p-2.5 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rosterTableBody" class="divide-y divide-yellow-500/20">
+            <!-- Dynamic Roster Rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-            // Colombia
-            "Alejandra Manco": "Colombia", "Luis Alexander Leon Montano": "Colombia",
-            "Kevin Durango": "Colombia", "Michelle Marquez": "Colombia", "Alexander": "Colombia",
-            "Andrea Gonzalez": "Colombia",
+  <!-- DATA IMPORT MODAL -->
+  <div id="importModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-midnightCard border-2 border-yellow-accent rounded-xl w-full max-w-3xl p-6 flex flex-col gap-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-yellow-accent pb-3">
+        <h3 class="text-lg font-black text-accentYellow flex items-center gap-2">
+          <i data-lucide="clipboard-paste" class="w-5 h-5"></i>
+          <span>Import AUX Logs (Copy & Paste)</span>
+        </h3>
+        <button id="closeImportModal" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
 
-            // Jamaica
-            "Shiyan Lee": "Jamaica", "Vashaun Thompson": "Jamaica", "Kia Francis": "Jamaica",
-            "Alex Scarlett": "Jamaica", "Michelle Salmon": "Jamaica", "Shanique Kelly": "Jamaica",
-            "Kenford Morris": "Jamaica", "Leona Wallace": "Jamaica", "Abigayle Gentles": "Jamaica",
-            "Daneil Facey": "Jamaica", "Tevin Smallwood": "Jamaica", "Sheldon Duncombe": "Jamaica",
+      <p class="text-xs text-slate-300">
+        Paste raw tab-separated rows from Excel/Sheets with the following required columns:<br>
+        <code class="text-accentYellow">Period started at (America/Chicago) | Period ended at (America/Chicago) | Away reason | Teammate</code>
+      </p>
 
-            // USA
-            "Fatin Chad": "USA", "Hannah Luna": "USA", "Ryan Barber": "USA",
-            "Julie Nguyen": "USA", "Taylor Rouse": "USA", "Amelia Capo": "USA"
-        };
+      <textarea id="importRawData" rows="8" placeholder="Paste copied data here..." class="w-full bg-midnight text-slate-100 font-mono text-xs border border-yellow-accent rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-accentYellow"></textarea>
 
-        // --- 2. THRESHOLD RULES ---
-        function getMaxAllowedSeconds(status, branch) {
-            const cleanStatus = (status || '').trim();
-            if (cleanStatus === "Call Wrap Up") return 15;
-            if (cleanStatus === "On a call") return 20 * 60;
-            if (cleanStatus === "Restroom break") return 10 * 60;
-            if (cleanStatus === "On a break") return 15 * 60;
-            
-            if (cleanStatus === "On lunch") {
-                if (branch === "Panama") return 30 * 60;
-                if (branch === "Jamaica") return 45 * 60;
-                return 60 * 60; // Guatemala, Colombia, Philippines, USA, Mexico
-            }
-            return 0;
+      <div class="flex justify-end gap-2">
+        <button id="cancelImportBtn" class="px-4 py-2 text-xs font-bold border border-slate-600 rounded-lg hover:bg-slate-800">Cancel</button>
+        <button id="processImportBtn" class="px-5 py-2 bg-accentYellow text-midnight text-xs font-black rounded-lg hover:bg-yellow-400 flex items-center gap-2">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>Process & Save Data</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT IMPLEMENTATION -->
+  <script>
+    // --- DEFAULT BRANCH MAPPING ---
+    const DEFAULT_ROSTER = {
+      "MJ Rafols": "Philippines", "Omar Jimenez": "Mexico", "Kevin Williams": "Panama", "Benneth Smith": "Panama",
+      "Zinedine Moscote": "Panama", "Dean Spencer": "Panama", "Marie Claire Perez": "Panama", "Ariel Antonio Yaegui Mazate": "Guatemala",
+      "Emilia Mishel Chajon Perez": "Guatemala", "Ann Dayuta": "Philippines", "Marianne Abigaile": "Philippines",
+      "Aaron Gozum": "Philippines", "Shiyan Lee": "Jamaica", "Vashaun Thompson": "Jamaica", "Kia Francis": "Jamaica",
+      "Alex Scarlett": "Jamaica", "Rudy Herrera": "Guatemala", "Cesar David Lopez Colaj": "Guatemala", "Jorge Barillas": "Guatemala",
+      "Yossi Aharon Martinez Garcia": "Guatemala", "Daniel Pelayo": "Mexico", "Kevin Gordoa": "Mexico",
+      "Lynda Izabel Escobedo de Leon": "Guatemala", "Daniel Hernandez": "Guatemala", "Raul Tornel Garcia": "Mexico",
+      "Fatin Chad": "USA", "Carlos Giovanni Flores Rios": "Guatemala", "Alejandra Manco": "Colombia",
+      "Luis Alexander Leon Montano": "Colombia", "Kevin Durango": "Colombia", "Israel Calderon Arias": "Mexico",
+      "Kathering Santos": "Guatemala", "Michelle Salmon": "Jamaica", "Danae Fergoso": "Mexico", "Luis Ajche": "Guatemala",
+      "Maria Saucedo": "Mexico", "Marco Lopez": "Guatemala", "Hannah Luna": "USA", "Jose Arriaga": "Guatemala",
+      "Melanie Annelisse Garcia Marin": "Guatemala", "Jonathan Pirir": "Guatemala", "Alexander": "Colombia",
+      "Juan Avedano": "Guatemala", "Kener Lee": "Guatemala", "Acsa Esquivel": "Guatemala", "Ryan Barber": "USA",
+      "Edgar Palomo": "Guatemala", "Julie Nguyen": "USA", "Froy César Oswaldo González Dávila": "Guatemala",
+      "Galilea Gutierrez": "Mexico", "Shanique Kelly": "Jamaica", "Kevin Acabal": "Guatemala", "Manfredo Monterroso": "Guatemala",
+      "Kenford Morris": "Jamaica", "Leona Wallace": "Jamaica", "Taylor Rouse": "USA", "Luis R": "Guatemala",
+      "Omar Gomez": "Guatemala", "Josue Sucuc": "Guatemala", "Gustavo Lopez": "Guatemala", "Marvin Sandoval": "Guatemala",
+      "Michelle Marquez": "Colombia", "Samantha Chinchilla": "Guatemala", "Alondra Mendoza": "Mexico", "Andy Pineda": "Guatemala",
+      "Esvin Gomez": "Guatemala", "Sonia Jimenez": "Panama", "Kellyneth Estrada": "Panama", "Stephanie Temple": "Panama",
+      "Felix Lowe": "Panama", "Marcos Espinosa": "Panama", "Jesus Rios": "Panama", "Alexander Santamaria": "Panama",
+      "Celina Ramirez": "Guatemala", "Karen Medinilla": "Guatemala", "Iverth Monterroso": "Guatemala", "Lucia Herrera": "Guatemala",
+      "Elias": "Guatemala", "Mónica Alejandra López Prado": "Guatemala", "Brandon Vasquez": "Guatemala", "Fernando Ramirez": "Mexico",
+      "Abigayle Gentles": "Jamaica", "Alex Coyote": "Guatemala", "Pablo Valenzuela": "Guatemala", "Otto De La Cruz": "Guatemala",
+      "Emely Hernandez": "Guatemala", "Eunice Sir": "Guatemala", "Marielys Tejada": "Panama", "Edgar Linares": "Guatemala",
+      "Dana Redwood": "Panama", "Kevin Lopez": "Guatemala", "Lelburn Gordon": "Panama", "Tevin Smallwood": "Jamaica",
+      "Diana Abigail Orozco Alvarez": "Guatemala", "Sebastian Chavez": "Mexico", "Cesar Larios": "Mexico", "Jorge Garrido": "Guatemala",
+      "Manny Juarez": "Guatemala", "Luis Gerardo Escobar Gonzalez": "Guatemala", "Daneil Facey": "Jamaica", "Ana Melendez": "Guatemala",
+      "Pablo Saquilmer": "Guatemala", "Diego Gonzalez": "Guatemala", "Sharon Olivares": "Guatemala", "Kyle Andrei Abad": "Philippines",
+      "Andrea Gonzalez": "Colombia", "Irving Reyes": "Mexico", "Jose Rodriguez Rosas": "Panama", "Amelia Capo": "USA",
+      "Jonathan Mejia": "Guatemala", "Sheldon Duncombe": "Jamaica", "Cristopher Orellana": "Guatemala", "Sebastian Q": "Guatemala",
+      "Keyren Fuertes": "Panama", "Jorge Saban": "Guatemala"
+    };
+
+    // --- APPLICATION STATE ---
+    let appState = {
+      roster: { ...DEFAULT_ROSTER },
+      logs: [], // Array of parsed records stored locally
+      selectedDate: new Date().toISOString().split('T')[0],
+      unlockedManagement: false,
+    };
+
+    // Chart instances
+    let auxChartInstance = null;
+    let topOffendersChartInstance = null;
+
+    // Load from LocalStorage
+    function loadStateFromStorage() {
+      const savedRoster = localStorage.getItem('aux_dashboard_roster');
+      if (savedRoster) {
+        appState.roster = JSON.parse(savedRoster);
+      }
+      const savedLogs = localStorage.getItem('aux_dashboard_logs');
+      if (savedLogs) {
+        appState.logs = JSON.parse(savedLogs);
+      }
+    }
+
+    function saveStateToStorage() {
+      localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
+      localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
+    }
+
+    // --- THRESHOLD RULE ENGINE ---
+    function getMaxLimitSeconds(awayReason, branch) {
+      const status = (awayReason || '').trim();
+      const country = (branch || 'Guatemala').trim();
+
+      if (status === 'Call Wrap Up') return 15;
+      if (status === 'On a call') return 20 * 60; // 1200s
+      if (status === 'Restroom break') return 10 * 60; // 600s
+      if (status === 'On a break') return 15 * 60; // 900s
+      if (status === 'On lunch') {
+        if (country === 'Panama') return 30 * 60; // 1800s
+        if (country === 'Jamaica') return 45 * 60; // 2700s
+        return 60 * 60; // 3600s for Guatemala, Colombia, Philippines, USA, Mexico
+      }
+      return 0;
+    }
+
+    function formatDuration(seconds) {
+      if (seconds < 60) return `${seconds}s`;
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+    }
+
+    // --- DOM INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', () => {
+      loadStateFromStorage();
+      lucide.createIcons();
+
+      // Initialize Date Picker to Today
+      const dateInput = document.getElementById('datePicker');
+      dateInput.value = appState.selectedDate;
+
+      // Event Listeners
+      setupThemeToggle();
+      setupDateControls();
+      setupModals();
+      setupFilters();
+      populateBranchDropdown();
+
+      renderDashboard();
+    });
+
+    // --- THEME TOGGLE (SUN/MOON FIXED BOTTOM-LEFT) ---
+    function setupThemeToggle() {
+      const toggleBtn = document.getElementById('themeToggleBtn');
+      const sunIcon = document.getElementById('themeIconSun');
+      const moonIcon = document.getElementById('themeIconMoon');
+
+      toggleBtn.addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        const isDark = document.documentElement.classList.contains('dark');
+        if (isDark) {
+          sunIcon.classList.add('hidden');
+          moonIcon.classList.remove('hidden');
+        } else {
+          moonIcon.classList.add('hidden');
+          sunIcon.classList.remove('hidden');
         }
+        renderCharts();
+      });
+    }
 
-        function formatThresholdLabel(status, branch) {
-            const sec = getMaxAllowedSeconds(status, branch);
-            if (sec < 60) return `${sec}s`;
-            return `${Math.floor(sec / 60)}m`;
+    // --- DATE CONTROLS ---
+    function setupDateControls() {
+      const dateInput = document.getElementById('datePicker');
+      const prevBtn = document.getElementById('prevDateBtn');
+      const nextBtn = document.getElementById('nextDateBtn');
+
+      dateInput.addEventListener('change', (e) => {
+        appState.selectedDate = e.target.value;
+        renderDashboard();
+      });
+
+      prevBtn.addEventListener('click', () => {
+        const current = new Date(appState.selectedDate);
+        current.setDate(current.getDate() - 1);
+        appState.selectedDate = current.toISOString().split('T')[0];
+        dateInput.value = appState.selectedDate;
+        renderDashboard();
+      });
+
+      nextBtn.addEventListener('click', () => {
+        const current = new Date(appState.selectedDate);
+        current.setDate(current.getDate() + 1);
+        appState.selectedDate = current.toISOString().split('T')[0];
+        dateInput.value = appState.selectedDate;
+        renderDashboard();
+      });
+    }
+
+    // --- MODALS & PASSWORD PROTECTION ---
+    function setupModals() {
+      const passwordModal = document.getElementById('passwordModal');
+      const teammatesModal = document.getElementById('teammatesModal');
+      const importModal = document.getElementById('importModal');
+
+      // Open Teammates Trigger with Password Prompt
+      document.getElementById('openTeammatesBtn').addEventListener('click', () => {
+        if (appState.unlockedManagement) {
+          teammatesModal.classList.remove('hidden');
+          renderRosterTable();
+        } else {
+          passwordModal.classList.remove('hidden');
         }
+      });
 
-        // --- 3. STATE & STORAGE ---
-        const STORAGE_KEY_DATA = 'AUX_DASHBOARD_DATA_EN_V3';
-        const STORAGE_KEY_MATES = 'AUX_DASHBOARD_MATES_V3';
-        
-        let dbData = {};
-        let selectedDate = new Date().toISOString().split('T')[0];
-        let editingMateKey = null;
-
-        // Charts
-        let chartStatusDist = null;
-        let chartTop15BranchOffenders = null;
-
-        function loadStorage() {
-            try {
-                const storedMates = localStorage.getItem(STORAGE_KEY_MATES);
-                if (storedMates) {
-                    MATE_BRANCH_MAP = JSON.parse(storedMates);
-                }
-
-                const storedData = localStorage.getItem(STORAGE_KEY_DATA);
-                if (storedData) {
-                    dbData = JSON.parse(storedData);
-                } else {
-                    dbData = {};
-                    saveStorage();
-                }
-            } catch (e) {
-                console.error("Storage load error", e);
-            }
+      // Password Submit
+      document.getElementById('passwordForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const pwd = document.getElementById('passwordInput').value;
+        if (pwd === 'management2026!') {
+          appState.unlockedManagement = true;
+          document.getElementById('passwordError').classList.add('hidden');
+          document.getElementById('passwordInput').value = '';
+          passwordModal.classList.add('hidden');
+          teammatesModal.classList.remove('hidden');
+          renderRosterTable();
+        } else {
+          document.getElementById('passwordError').classList.remove('hidden');
         }
+      });
 
-        function saveStorage() {
-            localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(dbData));
-            localStorage.setItem(STORAGE_KEY_MATES, JSON.stringify(MATE_BRANCH_MAP));
+      document.getElementById('closePasswordModal').addEventListener('click', () => passwordModal.classList.add('hidden'));
+      document.getElementById('cancelPasswordBtn').addEventListener('click', () => passwordModal.classList.add('hidden'));
+
+      // Close Teammates Modal
+      document.getElementById('closeTeammatesModal').addEventListener('click', () => teammatesModal.classList.add('hidden'));
+
+      // Add Teammate Form
+      document.getElementById('addTeammateForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('newTeammateName').value.trim();
+        const branch = document.getElementById('newTeammateBranch').value;
+        if (name) {
+          appState.roster[name] = branch;
+          saveStateToStorage();
+          document.getElementById('newTeammateName').value = '';
+          renderRosterTable();
+          populateBranchDropdown();
+          renderDashboard();
         }
+      });
 
-        // --- 4. HELPERS ---
-        function parseDurationSeconds(startStr, endStr) {
-            try {
-                const s = new Date(startStr.replace(/-/g, '/'));
-                const e = new Date(endStr.replace(/-/g, '/'));
-                const diffMs = e - s;
-                return isNaN(diffMs) || diffMs < 0 ? 0 : Math.floor(diffMs / 1000);
-            } catch {
-                return 0;
-            }
+      // Search Roster
+      document.getElementById('searchRosterInput').addEventListener('input', () => {
+        renderRosterTable();
+      });
+
+      // Import Modal Triggers
+      document.getElementById('openImportBtn').addEventListener('click', () => importModal.classList.remove('hidden'));
+      document.getElementById('closeImportModal').addEventListener('click', () => importModal.classList.add('hidden'));
+      document.getElementById('cancelImportBtn').addEventListener('click', () => importModal.classList.add('hidden'));
+
+      // Process Copy & Paste Import
+      document.getElementById('processImportBtn').addEventListener('click', processImportData);
+    }
+
+    // --- FILTERS & BRANCH DROPDOWN ---
+    function setupFilters() {
+      document.getElementById('branchFilter').addEventListener('change', renderDashboard);
+      document.getElementById('statusFilter').addEventListener('change', renderDashboard);
+      document.getElementById('searchTeammate').addEventListener('input', renderDashboard);
+      
+      document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+        document.getElementById('branchFilter').value = 'ALL';
+        document.getElementById('statusFilter').value = 'ALL';
+        document.getElementById('searchTeammate').value = '';
+        renderDashboard();
+      });
+
+      document.getElementById('exportCsvBtn').addEventListener('click', exportLogsCSV);
+    }
+
+    function populateBranchDropdown() {
+      const select = document.getElementById('branchFilter');
+      const branches = Array.from(new Set(Object.values(appState.roster))).sort();
+      select.innerHTML = `<option value="ALL">All Branches / Countries</option>` + 
+        branches.map(b => `<option value="${b}">${b}</option>`).join('');
+    }
+
+    // --- PROCESS PASTE IMPORT ---
+    function processImportData() {
+      const rawText = document.getElementById('importRawData').value.trim();
+      if (!rawText) return;
+
+      const lines = rawText.split(/\r?\n/);
+      let parsedCount = 0;
+
+      lines.forEach(line => {
+        const cols = line.split('\t').map(c => c.trim().replace(/^"|"$/g, ''));
+        if (cols.length >= 4) {
+          const startStr = cols[0];
+          const endStr = cols[1];
+          const awayReason = cols[2];
+          const teammate = cols[3];
+
+          // Skip Header Line
+          if (startStr.toLowerCase().includes('period started')) return;
+
+          const startDate = new Date(startStr);
+          const endDate = new Date(endStr);
+
+          if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+            const durationSecs = Math.max(0, Math.round((endDate - startDate) / 1000));
+            const dateKey = startDate.toISOString().split('T')[0];
+            const branch = appState.roster[teammate] || 'Guatemala';
+            const maxSecs = getMaxLimitSeconds(awayReason, branch);
+
+            appState.logs.push({
+              id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+              date: dateKey,
+              teammate,
+              branch,
+              awayReason,
+              startTime: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              endTime: endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              durationSecs,
+              maxLimitSecs: maxSecs,
+              overtimeSecs: Math.max(0, durationSecs - maxSecs),
+              isViolation: durationSecs > maxSecs
+            });
+            parsedCount++;
+          }
         }
+      });
 
-        function formatDuration(seconds) {
-            if (!seconds || seconds <= 0) return '0s';
-            const h = Math.floor(seconds / 3600);
-            const m = Math.floor((seconds % 3600) / 60);
-            const s = seconds % 60;
-            let res = '';
-            if (h > 0) res += `${h}h `;
-            if (m > 0 || h > 0) res += `${m}m `;
-            if (s > 0 || res === '') res += `${s}s`;
-            return res.trim();
+      if (parsedCount > 0) {
+        saveStateToStorage();
+        document.getElementById('importRawData').value = '';
+        document.getElementById('importModal').classList.add('hidden');
+        renderDashboard();
+      } else {
+        alert('Could not parse rows. Please check tab-separated column format.');
+      }
+    }
+
+    // --- MAIN RENDER ENGINE ---
+    function renderDashboard() {
+      const branchVal = document.getElementById('branchFilter').value;
+      const statusVal = document.getElementById('statusFilter').value;
+      const searchVal = document.getElementById('searchTeammate').value.toLowerCase().trim();
+
+      // Filter Logs for Selected Date & Criteria
+      const filteredLogs = appState.logs.filter(log => {
+        if (log.date !== appState.selectedDate) return false;
+        if (branchVal !== 'ALL' && log.branch !== branchVal) return false;
+        if (statusVal !== 'ALL' && log.awayReason !== statusVal) return false;
+        if (searchVal && !log.teammate.toLowerCase().includes(searchVal)) return false;
+        return true;
+      });
+
+      renderKPIs(filteredLogs);
+      renderTopOffendersGrid(filteredLogs);
+      renderLogsTable(filteredLogs);
+      renderCharts(filteredLogs);
+      lucide.createIcons();
+    }
+
+    // --- KPI CARDS ---
+    function renderKPIs(logs) {
+      const totalRecords = logs.length;
+      const uniqueTeammates = new Set(logs.map(l => l.teammate)).size;
+      const totalAuxSecs = logs.reduce((acc, l) => acc + l.durationSecs, 0);
+      const violations = logs.filter(l => l.isViolation);
+      const totalOvertimeSecs = violations.reduce((acc, l) => acc + l.overtimeSecs, 0);
+
+      document.getElementById('statTotalRecords').textContent = totalRecords;
+      document.getElementById('statActiveTeammates').textContent = `${uniqueTeammates} Active Teammates`;
+
+      document.getElementById('statTotalAuxTime').textContent = formatDuration(totalAuxSecs);
+
+      document.getElementById('statTotalViolations').textContent = violations.length;
+      document.getElementById('statTotalOvertime').textContent = `+${Math.round(totalOvertimeSecs / 60)} min overtime`;
+
+      // Overall Top Offender
+      const offenderMap = {};
+      violations.forEach(l => {
+        offenderMap[l.teammate] = (offenderMap[l.teammate] || 0) + l.overtimeSecs;
+      });
+
+      let topName = 'None';
+      let maxOvertime = 0;
+
+      Object.entries(offenderMap).forEach(([name, otSecs]) => {
+        if (otSecs > maxOvertime) {
+          maxOvertime = otSecs;
+          topName = name;
         }
-
-        // --- 5. RENDER DASHBOARD ---
-        function renderDashboard() {
-            document.getElementById('datePicker').value = selectedDate;
-
-            const rawRecords = dbData[selectedDate] || [];
-            const selectedBranch = document.getElementById('filterBranch').value;
-            const selectedStatus = document.getElementById('filterStatus').value;
-            const searchText = document.getElementById('filterSearch').value.toLowerCase().trim();
-
-            const filteredRecords = rawRecords.filter(rec => {
-                const matchesBranch = selectedBranch === 'ALL' || rec.branch === selectedBranch;
-                const matchesStatus = selectedStatus === 'ALL' || rec.reason === selectedStatus;
-                const matchesSearch = !searchText || rec.mate.toLowerCase().includes(searchText);
-                return matchesBranch && matchesStatus && matchesSearch;
-            });
-
-            updateKPIs(filteredRecords);
-            updateTopOffendersByStatus(rawRecords);
-            renderCharts(filteredRecords);
-            renderTable(filteredRecords);
-        }
-
-        function updateKPIs(records) {
-            let totalTimeSec = 0;
-            let totalOffences = 0;
-            let totalOvertimeSec = 0;
-            const activeMatesSet = new Set();
-            const mateOffenceMap = {};
-
-            records.forEach(r => {
-                totalTimeSec += r.durationSec;
-                activeMatesSet.add(r.mate);
-
-                if (r.isOffence) {
-                    totalOffences++;
-                    totalOvertimeSec += r.overtimeSec;
-                    if (!mateOffenceMap[r.mate]) mateOffenceMap[r.mate] = { count: 0, overtimeSec: 0 };
-                    mateOffenceMap[r.mate].count++;
-                    mateOffenceMap[r.mate].overtimeSec += r.overtimeSec;
-                }
-            });
-
-            document.getElementById('kpiTotalRecords').textContent = records.length;
-            document.getElementById('kpiActiveTeammates').textContent = `${activeMatesSet.size} Active Teammates`;
-            document.getElementById('kpiTotalTime').textContent = formatDuration(totalTimeSec);
-            document.getElementById('kpiTotalOffences').textContent = totalOffences;
-            document.getElementById('kpiOvertimeTotal').textContent = `+${Math.round(totalOvertimeSec / 60)} min overtime`;
-
-            let topOffender = 'None';
-            let topOffenderDetails = '0 violations';
-            let maxOvertime = 0;
-
-            Object.entries(mateOffenceMap).forEach(([mate, data]) => {
-                if (data.overtimeSec > maxOvertime) {
-                    maxOvertime = data.overtimeSec;
-                    topOffender = mate;
-                    topOffenderDetails = `${data.count} viol. (+${Math.round(data.overtimeSec / 60)}m)`;
-                }
-            });
-
-            document.getElementById('kpiTopOffenderName').textContent = topOffender;
-            document.getElementById('kpiTopOffenderDetails').textContent = topOffenderDetails;
-        }
-
-        function updateTopOffendersByStatus(records) {
-            const statuses = ["On lunch", "Restroom break", "On a break", "Call Wrap Up", "On a call"];
-            const grid = document.getElementById('topOffendersGrid');
-            grid.innerHTML = '';
-
-            statuses.forEach(status => {
-                const offencesForStatus = records.filter(r => r.reason === status && r.isOffence);
-                const mateStats = {};
-
-                offencesForStatus.forEach(r => {
-                    if (!mateStats[r.mate]) mateStats[r.mate] = { count: 0, overtimeSec: 0, branch: r.branch };
-                    mateStats[r.mate].count++;
-                    mateStats[r.mate].overtimeSec += r.overtimeSec;
-                });
-
-                let topMate = null;
-                let maxOvertime = -1;
-
-                Object.entries(mateStats).forEach(([mate, data]) => {
-                    if (data.overtimeSec > maxOvertime) {
-                        maxOvertime = data.overtimeSec;
-                        topMate = { name: mate, ...data };
-                    }
-                });
-
-                const card = document.createElement('div');
-                card.className = "bg-midnight-card border yellow-border rounded-xl p-3.5 shadow flex flex-col justify-between space-y-2 relative";
-                
-                if (topMate) {
-                    card.innerHTML = `
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-yellow-400 bg-yellow-400/10 border yellow-border px-2 py-0.5 rounded-md inline-block mb-1.5">${status}</span>
-                            <h4 class="text-xs font-bold text-yellow-400 truncate" title="${topMate.name}">${topMate.name}</h4>
-                            <p class="text-[11px] text-slate-400">${topMate.branch}</p>
-                        </div>
-                        <div class="pt-2 border-t yellow-border flex items-center justify-between">
-                            <span class="text-xs text-red-400 font-bold">${topMate.count} viol.</span>
-                            <span class="text-xs text-yellow-400 font-extrabold">+${formatDuration(topMate.overtimeSec)}</span>
-                        </div>
-                    `;
-                } else {
-                    card.innerHTML = `
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-800 border yellow-border px-2 py-0.5 rounded-md inline-block mb-1.5">${status}</span>
-                            <h4 class="text-xs font-bold text-slate-500">No Violations</h4>
-                            <p class="text-[11px] text-slate-600">-</p>
-                        </div>
-                        <div class="pt-2 border-t yellow-border flex items-center justify-between">
-                            <span class="text-xs text-emerald-400 font-semibold">100% OK</span>
-                            <span class="text-xs text-slate-500">0s</span>
-                        </div>
-                    `;
-                }
-
-                grid.appendChild(card);
-            });
-        }
-
-        // --- 6. CHARTS ---
-        function renderCharts(records) {
-            // 1. Status Distribution
-            const statusMap = {};
-            records.forEach(r => {
-                statusMap[r.reason] = (statusMap[r.reason] || 0) + Math.round(r.durationSec / 60);
-            });
-
-            if (chartStatusDist) chartStatusDist.destroy();
-            const ctx1 = document.getElementById('chartStatusDist').getContext('2d');
-            chartStatusDist = new Chart(ctx1, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(statusMap).length ? Object.keys(statusMap) : ['No Data'],
-                    datasets: [{
-                        data: Object.values(statusMap).length ? Object.values(statusMap) : [1],
-                        backgroundColor: ['#FACC15', '#0284C7', '#10B981', '#EF4444', '#8B5CF6', '#64748B'],
-                        borderColor: '#FACC15',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { color: '#FACC15', font: { size: 10 } } } }
-                }
-            });
-
-            // 2. Top 15 Branch Offenders
-            const mateBranchOvertime = {};
-            records.forEach(r => {
-                if (r.isOffence) {
-                    const label = `${r.mate} (${r.branch})`;
-                    mateBranchOvertime[label] = (mateBranchOvertime[label] || 0) + +(r.overtimeSec / 60).toFixed(1);
-                }
-            });
-
-            const sortedTop15 = Object.entries(mateBranchOvertime)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 15);
-
-            const top15Labels = sortedTop15.map(m => m[0]);
-            const top15Values = sortedTop15.map(m => m[1]);
-
-            if (chartTop15BranchOffenders) chartTop15BranchOffenders.destroy();
-            const ctx2 = document.getElementById('chartTop15BranchOffenders').getContext('2d');
-            chartTop15BranchOffenders = new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: top15Labels.length ? top15Labels : ['No Offences'],
-                    datasets: [{
-                        label: 'Overtime (Min)',
-                        data: top15Values.length ? top15Values : [0],
-                        backgroundColor: '#FACC15',
-                        borderColor: '#EAB308',
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            ticks: { color: '#FACC15', font: { size: 9 } },
-                            grid: { color: 'rgba(250, 204, 21, 0.2)' }
-                        },
-                        y: {
-                            ticks: { color: '#FACC15', font: { size: 10 } },
-                            grid: { color: 'rgba(250, 204, 21, 0.2)' }
-                        }
-                    },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        }
-
-        // --- 7. TABLE RENDER ---
-        function renderTable(records) {
-            const tbody = document.getElementById('dataTableBody');
-            const emptyState = document.getElementById('tableEmptyState');
-            document.getElementById('tableRecordCount').textContent = records.length;
-
-            tbody.innerHTML = '';
-
-            if (records.length === 0) {
-                emptyState.classList.remove('hidden');
-                return;
-            }
-            emptyState.classList.add('hidden');
-
-            records.forEach(r => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-yellow-400/10 transition border-b yellow-border";
-
-                const limitLabel = formatThresholdLabel(r.reason, r.branch);
-                const isOver = r.isOffence;
-
-                tr.innerHTML = `
-                    <td class="py-3 px-4 font-bold text-yellow-400 border-r yellow-border">${r.mate}</td>
-                    <td class="py-3 px-4 border-r yellow-border">
-                        <span class="bg-midnight-input border yellow-border px-2 py-0.5 rounded text-[11px] font-bold text-yellow-400">${r.branch}</span>
-                    </td>
-                    <td class="py-3 px-4 border-r yellow-border">${r.reason}</td>
-                    <td class="py-3 px-4 font-mono text-slate-400 text-[11px] border-r yellow-border">${r.startedAt}</td>
-                    <td class="py-3 px-4 font-mono text-slate-400 text-[11px] border-r yellow-border">${r.endedAt}</td>
-                    <td class="py-3 px-4 font-bold border-r yellow-border ${isOver ? 'text-yellow-400' : ''}">${formatDuration(r.durationSec)}</td>
-                    <td class="py-3 px-4 font-mono text-slate-400 border-r yellow-border">${limitLabel}</td>
-                    <td class="py-3 px-4 text-center">
-                        ${isOver ? 
-                            `<span class="bg-red-500/10 border border-red-500/30 text-red-400 px-2.5 py-1 rounded-full text-[10px] font-black inline-flex items-center gap-1">
-                                <i data-lucide="alert-circle" class="w-3 h-3"></i> EXCEEDED (+${formatDuration(r.overtimeSec)})
-                             </span>` : 
-                            `<span class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-2.5 py-1 rounded-full text-[10px] font-bold inline-flex items-center gap-1">
-                                <i data-lucide="check-circle-2" class="w-3 h-3"></i> OK
-                             </span>`
-                        }
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            lucide.createIcons();
-        }
-
-        // --- 8. TEAMMATE CRUD MODAL FUNCTIONS ---
-        function renderTeammatesTable() {
-            const tbody = document.getElementById('tmTableBody');
-            const search = document.getElementById('tmSearchInput').value.toLowerCase();
-            tbody.innerHTML = '';
-
-            Object.entries(MATE_BRANCH_MAP).forEach(([mate, branch]) => {
-                if (search && !mate.toLowerCase().includes(search) && !branch.toLowerCase().includes(search)) {
-                    return;
-                }
-
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-yellow-400/5 transition border-b yellow-border text-xs";
-                tr.innerHTML = `
-                    <td class="py-2.5 px-3 font-bold text-yellow-400">${mate}</td>
-                    <td class="py-2.5 px-3 text-slate-300">${branch}</td>
-                    <td class="py-2.5 px-3 text-right space-x-1">
-                        <button onclick="editMate('${mate}')" class="p-1 bg-yellow-400/10 hover:bg-yellow-400/20 text-yellow-400 border yellow-border rounded transition">
-                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                        </button>
-                        <button onclick="deleteMate('${mate}')" class="p-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded transition">
-                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-            lucide.createIcons();
-        }
-
-        window.editMate = function(mate) {
-            editingMateKey = mate;
-            document.getElementById('tmNameInput').value = mate;
-            document.getElementById('tmBranchSelect').value = MATE_BRANCH_MAP[mate];
-            document.getElementById('tmFormTitle').textContent = "Edit Teammate";
-            document.getElementById('tmCancelEditBtn').classList.remove('hidden');
-        };
-
-        window.deleteMate = function(mate) {
-            if (confirm(`Remove teammate "${mate}" from active roster?`)) {
-                delete MATE_BRANCH_MAP[mate];
-                saveStorage();
-                renderTeammatesTable();
-                renderDashboard();
-            }
-        };
-
-        function resetMateForm() {
-            editingMateKey = null;
-            document.getElementById('tmNameInput').value = '';
-            document.getElementById('tmFormTitle').textContent = "Add New Teammate";
-            document.getElementById('tmCancelEditBtn').classList.add('hidden');
-        }
-
-        // --- 9. IMPORT LOGIC ---
-        function parseAndImportText(rawText, importDate) {
-            if (!rawText || !rawText.trim()) return 0;
-
-            const lines = rawText.trim().split(/\r?\n/);
-            const parsedRecords = [];
-
-            lines.forEach((line, index) => {
-                const cols = line.includes('\t') ? line.split('\t') : line.split(',');
-                if (index === 0 && (cols[0].toLowerCase().includes('period') || cols[3]?.toLowerCase().includes('mate'))) return;
-
-                if (cols.length >= 4) {
-                    const startedAt = cols[0].trim();
-                    const endedAt = cols[1].trim();
-                    const reason = cols[2].trim();
-                    const mate = cols[3].trim();
-
-                    const branch = MATE_BRANCH_MAP[mate] || "Guatemala";
-                    const durationSec = parseDurationSeconds(startedAt, endedAt);
-                    const maxSec = getMaxAllowedSeconds(reason, branch);
-                    const isOffence = durationSec > maxSec;
-                    const overtimeSec = isOffence ? (durationSec - maxSec) : 0;
-
-                    parsedRecords.push({ startedAt, endedAt, reason, mate, branch, durationSec, maxSec, isOffence, overtimeSec });
-                }
-            });
-
-            if (parsedRecords.length > 0) {
-                dbData[importDate] = parsedRecords;
-                saveStorage();
-                selectedDate = importDate;
-                renderDashboard();
-                return parsedRecords.length;
-            }
-            return 0;
-        }
-
-        // --- 10. EXPORT CSV ---
-        function exportToCSV() {
-            const records = dbData[selectedDate] || [];
-            if (!records.length) {
-                alert("No logs available for export.");
-                return;
-            }
-
-            let csvContent = "data:text/csv;charset=utf-8,Teammate,Branch,Away Reason,Period Started At,Period Ended At,Duration (s),Max Limit (s),Violation,Overtime (s)\n";
-            records.forEach(r => {
-                csvContent += `"${r.mate}","${r.branch}","${r.reason}","${r.startedAt}","${r.endedAt}",${r.durationSec},${r.maxSec},${r.isOffence},${r.overtimeSec}\n`;
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `AUX_Report_${selectedDate}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // --- 11. INITIALIZATION & EVENTS ---
-        document.addEventListener('DOMContentLoaded', () => {
-            loadStorage();
-            renderDashboard();
-
-            // Date Navigation
-            document.getElementById('datePicker').addEventListener('change', (e) => {
-                if (e.target.value) {
-                    selectedDate = e.target.value;
-                    renderDashboard();
-                }
-            });
-
-            document.getElementById('btnPrevDay').addEventListener('click', () => {
-                const current = new Date(selectedDate);
-                current.setDate(current.getDate() - 1);
-                selectedDate = current.toISOString().split('T')[0];
-                renderDashboard();
-            });
-
-            document.getElementById('btnNextDay').addEventListener('click', () => {
-                const current = new Date(selectedDate);
-                current.setDate(current.getDate() + 1);
-                selectedDate = current.toISOString().split('T')[0];
-                renderDashboard();
-            });
-
-            // Filters
-            document.getElementById('filterBranch').addEventListener('change', renderDashboard);
-            document.getElementById('filterStatus').addEventListener('change', renderDashboard);
-            document.getElementById('filterSearch').addEventListener('input', renderDashboard);
-            document.getElementById('btnResetFilters').addEventListener('click', () => {
-                document.getElementById('filterBranch').value = 'ALL';
-                document.getElementById('filterStatus').value = 'ALL';
-                document.getElementById('filterSearch').value = '';
-                renderDashboard();
-            });
-
-            // Theme Switcher (Light/Dark Mode toggle)
-            const themeToggleBtn = document.getElementById('themeToggleBtn');
-            const iconSun = document.getElementById('iconSun');
-            const iconMoon = document.getElementById('iconMoon');
-
-            themeToggleBtn.addEventListener('click', () => {
-                document.documentElement.classList.toggle('dark');
-                const isDark = document.documentElement.classList.contains('dark');
-                if (isDark) {
-                    iconSun.classList.add('hidden');
-                    iconMoon.classList.remove('hidden');
-                } else {
-                    iconSun.classList.remove('hidden');
-                    iconMoon.classList.add('hidden');
-                }
-                renderCharts(dbData[selectedDate] || []);
-            });
-
-            // Teammates Modal Controls
-            const teammatesModal = document.getElementById('teammatesModal');
-            document.getElementById('openTeammatesBtn').addEventListener('click', () => {
-                resetMateForm();
-                renderTeammatesTable();
-                teammatesModal.classList.remove('hidden');
-            });
-
-            document.getElementById('closeTeammatesBtn').addEventListener('click', () => teammatesModal.classList.add('hidden'));
-            document.getElementById('tmSearchInput').addEventListener('input', renderTeammatesTable);
-
-            document.getElementById('tmSaveBtn').addEventListener('click', () => {
-                const name = document.getElementById('tmNameInput').value.trim();
-                const branch = document.getElementById('tmBranchSelect').value;
-
-                if (!name) {
-                    alert("Please enter a valid teammate name.");
-                    return;
-                }
-
-                if (editingMateKey && editingMateKey !== name) {
-                    delete MATE_BRANCH_MAP[editingMateKey];
-                }
-
-                MATE_BRANCH_MAP[name] = branch;
-                saveStorage();
-                resetMateForm();
-                renderTeammatesTable();
-                renderDashboard();
-            });
-
-            document.getElementById('tmCancelEditBtn').addEventListener('click', resetMateForm);
-
-            // Import Modal Controls
-            const importModal = document.getElementById('importModal');
-            document.getElementById('openImportBtn').addEventListener('click', () => {
-                document.getElementById('importDatePicker').value = selectedDate;
-                importModal.classList.remove('hidden');
-            });
-
-            document.getElementById('closeImportBtn').addEventListener('click', () => importModal.classList.add('hidden'));
-            document.getElementById('cancelImportBtn').addEventListener('click', () => importModal.classList.add('hidden'));
-
-            document.getElementById('processImportBtn').addEventListener('click', () => {
-                const rawText = document.getElementById('importRawData').value;
-                const impDate = document.getElementById('importDatePicker').value || selectedDate;
-                
-                const count = parseAndImportText(rawText, impDate);
-                if (count > 0) {
-                    importModal.classList.add('hidden');
-                    document.getElementById('importRawData').value = '';
-                } else {
-                    alert("Unable to process data. Check format and try again.");
-                }
-            });
-
-            document.getElementById('btnExportCSV').addEventListener('click', exportToCSV);
-
-            lucide.createIcons();
+      });
+
+      document.getElementById('statTopOffender').textContent = topName;
+      document.getElementById('statTopOffenderDetails').textContent = maxOvertime > 0 ? `+${Math.round(maxOvertime / 60)}m overtime` : '0 violations';
+    }
+
+    // --- TOP OFFENDERS BY STATUS GRID ---
+    function renderTopOffendersGrid(logs) {
+      const statuses = ['On lunch', 'Restroom break', 'On a break', 'Call Wrap Up', 'On a call'];
+      const grid = document.getElementById('topOffendersGrid');
+
+      grid.innerHTML = statuses.map(status => {
+        const statusLogs = logs.filter(l => l.awayReason === status);
+        const violations = statusLogs.filter(l => l.isViolation);
+
+        const offenderMap = {};
+        violations.forEach(l => {
+          offenderMap[l.teammate] = (offenderMap[l.teammate] || 0) + l.overtimeSecs;
         });
-    </script>
+
+        let topAgent = 'No Violations';
+        let topSecs = 0;
+
+        Object.entries(offenderMap).forEach(([name, secs]) => {
+          if (secs > topSecs) {
+            topSecs = secs;
+            topAgent = name;
+          }
+        });
+
+        const isOk = topSecs === 0;
+
+        return `
+          <div class="p-3 rounded-lg bg-midnight border border-yellow-accent flex flex-col justify-between">
+            <div>
+              <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-yellow-500/20 text-accentYellow border border-yellow-accent">
+                ${status}
+              </span>
+              <p class="text-xs font-bold text-slate-200 mt-2 truncate">${topAgent}</p>
+            </div>
+            <div class="mt-3 flex items-center justify-between border-t border-yellow-500/20 pt-2 text-[11px]">
+              <span class="${isOk ? 'text-green-400 font-bold' : 'text-red-400 font-bold'}">
+                ${isOk ? '100% OK' : '+' + Math.round(topSecs / 60) + 'm overtime'}
+              </span>
+              <span class="text-slate-400">${violations.length} logs</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // --- TABLE RENDER ---
+    function renderLogsTable(logs) {
+      const tbody = document.getElementById('logsTableBody');
+      document.getElementById('logsCountBadge').textContent = logs.length;
+
+      if (logs.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center py-8 text-slate-400">
+              <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 text-yellow-500/40"></i>
+              No logs found for the selected date or filter.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = logs.map(l => `
+        <tr class="hover:bg-yellow-500/10 transition duration-150">
+          <td class="p-3 font-semibold border-r border-yellow-500/20 text-slate-100">${l.teammate}</td>
+          <td class="p-3 border-r border-yellow-500/20 text-slate-300">${l.branch}</td>
+          <td class="p-3 border-r border-yellow-500/20">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/10 text-accentYellow border border-yellow-accent/40">
+              ${l.awayReason}
+            </span>
+          </td>
+          <td class="p-3 border-r border-yellow-500/20 font-mono text-slate-400">${l.startTime}</td>
+          <td class="p-3 border-r border-yellow-500/20 font-mono text-slate-400">${l.endTime}</td>
+          <td class="p-3 border-r border-yellow-500/20 font-bold">${formatDuration(l.durationSecs)}</td>
+          <td class="p-3 border-r border-yellow-500/20 text-slate-400">${formatDuration(l.maxLimitSecs)}</td>
+          <td class="p-3">
+            ${l.isViolation ? 
+              `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-red-500/20 text-red-400 border border-red-500/40">
+                Overtime (+${formatDuration(l.overtimeSecs)})
+              </span>` : 
+              `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/40">
+                Compliant
+              </span>`
+            }
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // --- CHARTS (WITH YELLOW GRIDLINES & ACCENTS) ---
+    function renderCharts(logs = []) {
+      const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#FACC15' : '#1E293B';
+      const gridColor = 'rgba(250, 204, 21, 0.25)'; // Yellow Gridlines
+
+      // 1. AUX Distribution Chart
+      const statusTotals = {};
+      logs.forEach(l => {
+        statusTotals[l.awayReason] = (statusTotals[l.awayReason] || 0) + Math.round(l.durationSecs / 60);
+      });
+
+      const auxCtx = document.getElementById('auxDistributionChart').getContext('2d');
+      if (auxChartInstance) auxChartInstance.destroy();
+
+      auxChartInstance = new Chart(auxCtx, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(statusTotals).length ? Object.keys(statusTotals) : ['No Data'],
+          datasets: [{
+            data: Object.keys(statusTotals).length ? Object.values(statusTotals) : [1],
+            backgroundColor: ['#FACC15', '#38BDF8', '#4ADE80', '#F87171', '#C084FC'],
+            borderColor: '#0F172A',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: textColor, font: { weight: 'bold' } } }
+          }
+        }
+      });
+
+      // 2. Top 15 Branch Offenders Chart
+      const offenderBranchMap = {};
+      logs.filter(l => l.isViolation).forEach(l => {
+        const key = `${l.teammate} (${l.branch})`;
+        offenderBranchMap[key] = (offenderBranchMap[key] || 0) + Math.round(l.overtimeSecs / 60);
+      });
+
+      const sortedOffenders = Object.entries(offenderBranchMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15);
+
+      const topCtx = document.getElementById('topBranchOffendersChart').getContext('2d');
+      if (topOffendersChartInstance) topOffendersChartInstance.destroy();
+
+      topOffendersChartInstance = new Chart(topCtx, {
+        type: 'bar',
+        data: {
+          labels: sortedOffenders.length ? sortedOffenders.map(o => o[0]) : ['No Violations'],
+          datasets: [{
+            label: 'Overtime (Minutes)',
+            data: sortedOffenders.length ? sortedOffenders.map(o => o[1]) : [0],
+            backgroundColor: '#FACC15',
+            borderColor: '#EAB308',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              ticks: { color: textColor, font: { size: 10 } },
+              grid: { color: gridColor }
+            },
+            y: {
+              ticks: { color: textColor },
+              grid: { color: gridColor }
+            }
+          },
+          plugins: {
+            legend: { labels: { color: textColor } }
+          }
+        }
+      });
+    }
+
+    // --- MANAGE TEAMMATES ROSTER TABLE ---
+    function renderRosterTable() {
+      const tbody = document.getElementById('rosterTableBody');
+      const filter = document.getElementById('searchRosterInput').value.toLowerCase().trim();
+
+      const entries = Object.entries(appState.roster).filter(([name, branch]) => {
+        return name.toLowerCase().includes(filter) || branch.toLowerCase().includes(filter);
+      }).sort();
+
+      tbody.innerHTML = entries.map(([name, branch]) => `
+        <tr class="hover:bg-yellow-500/10">
+          <td class="p-2.5 font-bold border-r border-yellow-500/20 text-slate-100">${name}</td>
+          <td class="p-2.5 border-r border-yellow-500/20 text-slate-300">${branch}</td>
+          <td class="p-2.5 text-center flex items-center justify-center gap-2">
+            <button onclick="editTeammate('${name}')" class="p-1 hover:text-accentYellow text-slate-400" title="Edit">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteTeammate('${name}')" class="p-1 hover:text-red-400 text-slate-400" title="Delete">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    window.editTeammate = function(oldName) {
+      const newName = prompt('Edit Teammate Name:', oldName);
+      if (newName && newName.trim()) {
+        const currentBranch = appState.roster[oldName];
+        delete appState.roster[oldName];
+        appState.roster[newName.trim()] = currentBranch;
+        saveStateToStorage();
+        renderRosterTable();
+        populateBranchDropdown();
+        renderDashboard();
+      }
+    };
+
+    window.deleteTeammate = function(name) {
+      if (confirm(`Are you sure you want to delete ${name}?`)) {
+        delete appState.roster[name];
+        saveStateToStorage();
+        renderRosterTable();
+        populateBranchDropdown();
+        renderDashboard();
+      }
+    };
+
+    // --- CSV EXPORT ---
+    function exportLogsCSV() {
+      const branchVal = document.getElementById('branchFilter').value;
+      const statusVal = document.getElementById('statusFilter').value;
+
+      const filteredLogs = appState.logs.filter(log => {
+        if (log.date !== appState.selectedDate) return false;
+        if (branchVal !== 'ALL' && log.branch !== branchVal) return false;
+        if (statusVal !== 'ALL' && log.awayReason !== statusVal) return false;
+        return true;
+      });
+
+      if (filteredLogs.length === 0) {
+        alert('No data available to export.');
+        return;
+      }
+
+      let csv = 'Teammate,Branch,Away Reason,Start Time,End Time,Duration (s),Max Limit (s),Overtime (s),Is Violation\n';
+      filteredLogs.forEach(l => {
+        csv += `"${l.teammate}","${l.branch}","${l.awayReason}","${l.startTime}","${l.endTime}",${l.durationSecs},${l.maxLimitSecs},${l.overtimeSecs},${l.isViolation}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `AUX_Report_${appState.selectedDate}.csv`);
+      a.click();
+    }
+  </script>
 </body>
 </html>
