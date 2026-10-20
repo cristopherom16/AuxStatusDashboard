@@ -524,6 +524,15 @@
       console.warn("LocalStorage initial load error:", e);
     }
 
+    // Clear all column and search filters when navigating between dates
+    function resetActiveSearchFilters() {
+      document.getElementById('searchTeammate').value = '';
+      document.getElementById('branchFilter').value = 'ALL';
+      document.getElementById('tableColFilterTeammate').value = 'ALL';
+      document.getElementById('tableColFilterBranch').value = 'ALL';
+      document.getElementById('tableColFilterStatus').value = 'ALL';
+    }
+
     // --- FIREBASE REALTIME SYNC ENGINE ---
     function initFirebaseSync() {
       const dbRef = database.ref('dashboard_data');
@@ -537,7 +546,7 @@
           if (val.logs) {
             const remoteLogs = Array.isArray(val.logs) ? val.logs : Object.values(val.logs);
             
-            // Merge local and remote logs using unique IDs so local entries are preserved
+            // Merge local and remote logs using unique IDs so local entries are never lost
             const logMap = new Map();
             appState.logs.forEach(l => { if(l && l.id) logMap.set(l.id, l); });
             remoteLogs.forEach(l => { if(l && l.id) logMap.set(l.id, l); });
@@ -700,6 +709,7 @@
       dateInput.addEventListener('change', (e) => {
         appState.selectedDate = e.target.value;
         localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
+        resetActiveSearchFilters();
         renderDashboard();
       });
 
@@ -710,6 +720,7 @@
         appState.selectedDate = getLocalDateKey(current);
         dateInput.value = appState.selectedDate;
         localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
+        resetActiveSearchFilters();
         renderDashboard();
       });
 
@@ -720,6 +731,7 @@
         appState.selectedDate = getLocalDateKey(current);
         dateInput.value = appState.selectedDate;
         localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
+        resetActiveSearchFilters();
         renderDashboard();
       });
 
@@ -829,11 +841,7 @@
       document.getElementById('tableColFilterStatus').addEventListener('change', renderDashboard);
 
       document.getElementById('resetFiltersBtn').addEventListener('click', () => {
-        document.getElementById('branchFilter').value = 'ALL';
-        document.getElementById('searchTeammate').value = '';
-        document.getElementById('tableColFilterTeammate').value = 'ALL';
-        document.getElementById('tableColFilterBranch').value = 'ALL';
-        document.getElementById('tableColFilterStatus').value = 'ALL';
+        resetActiveSearchFilters();
         renderDashboard();
       });
 
@@ -950,6 +958,7 @@
           document.getElementById('datePicker').value = firstImportedDate;
         }
 
+        resetActiveSearchFilters();
         recalculateAllLimits();
         saveStateToStorage();
 
