@@ -29,10 +29,6 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Firebase Modular Compat SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-
   <style>
     /* Custom Scrollbar */
     ::-webkit-scrollbar {
@@ -80,7 +76,6 @@
     <!-- TOP HEADER -->
     <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-xl bg-midnightCard border-2 border-yellow-accent shadow-lg shadow-yellow-500/10">
       
-      <!-- Title Section -->
       <div class="flex items-center gap-3">
         <div class="p-3 bg-yellow-500/20 rounded-xl border border-yellow-accent text-accentYellow animate-pulse">
           <i data-lucide="alarm-clock" class="w-8 h-8"></i>
@@ -93,7 +88,6 @@
         </div>
       </div>
 
-      <!-- Date Navigator & Action Controls -->
       <div class="flex flex-wrap items-center gap-3">
         
         <!-- Date Navigator & Save Day Wrapper -->
@@ -120,13 +114,11 @@
           </button>
         </div>
 
-        <!-- Manage Teammates Button -->
         <button id="openTeammatesBtn" class="flex items-center gap-2 px-4 py-2.5 bg-midnight hover:bg-yellow-500/20 text-accentYellow border-2 border-yellow-accent font-bold rounded-lg transition duration-150 shadow-sm">
           <i data-lucide="users" class="w-4 h-4"></i>
           <span>Manage Teammates</span>
         </button>
 
-        <!-- Import Data Modal Trigger -->
         <button id="openImportBtn" class="flex items-center gap-2 px-5 py-2.5 bg-accentYellow text-midnight font-black rounded-lg hover:bg-yellow-400 transition duration-150 shadow-md shadow-yellow-500/20">
           <i data-lucide="file-plus" class="w-5 h-5"></i>
           <span>Import Data</span>
@@ -435,27 +427,8 @@
     </div>
   </div>
 
-  <!-- SCRIPT IMPLEMENTATION WITH SAFE PERSISTENCE -->
+  <!-- JASSCRIPT ENGINE -->
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAUkhxAp6cR2_78FTS1g66WCF8ZkUmXYU4",
-      authDomain: "auxstatusdashboard.firebaseapp.com",
-      databaseURL: "https://auxstatusdashboard-default-rtdb.firebaseio.com",
-      projectId: "auxstatusdashboard",
-      storageBucket: "auxstatusdashboard.firebasestorage.app",
-      messagingSenderId: "993372406272",
-      appId: "1:993372406272:web:e61ae859c6a3668de58ee5",
-      measurementId: "G-QGBQFQX5Z2"
-    };
-
-    let database = null;
-    try {
-      firebase.initializeApp(firebaseConfig);
-      database = firebase.database();
-    } catch(err) {
-      console.warn("Firebase Init notice:", err);
-    }
-
     function getLocalDateKey(dateObj) {
       if (!dateObj || isNaN(dateObj.getTime())) return new Date().toISOString().split('T')[0];
       const yyyy = dateObj.getFullYear();
@@ -554,7 +527,7 @@
     let topOffendersChartInstance = null;
     let alertTimeout = null;
 
-    // Direct LocalStorage Synchronous Initialization
+    // Synchronous LocalStorage Load (Primary Storage)
     (function loadLocalStorageData() {
       try {
         const localRoster = localStorage.getItem('aux_dashboard_roster');
@@ -588,54 +561,6 @@
       } catch(e) {
         console.warn("LocalStorage save error:", e);
       }
-
-      if (database) {
-        database.ref('dashboard_data').set({
-          roster: appState.roster,
-          logs: appState.logs,
-          lastUpdated: Date.now()
-        }).catch(err => console.warn("Firebase save warning:", err));
-      }
-    }
-
-    function initFirebaseSync() {
-      if (!database) return;
-      const dbRef = database.ref('dashboard_data');
-      
-      dbRef.on('value', (snapshot) => {
-        const val = snapshot.val();
-        if (val) {
-          if (val.roster) appState.roster = { ...appState.roster, ...val.roster };
-          if (val.logs) {
-            const remoteLogs = Array.isArray(val.logs) ? val.logs : Object.values(val.logs);
-            const logMap = new Map();
-            appState.logs.forEach(l => { 
-              if (l) {
-                const idKey = l.id || ('log_' + l.date + '_' + l.teammate + '_' + l.startTime);
-                l.id = idKey;
-                logMap.set(idKey, l); 
-              }
-            });
-            remoteLogs.forEach(l => { 
-              if (l) {
-                const idKey = l.id || ('log_' + l.date + '_' + l.teammate + '_' + l.startTime);
-                l.id = idKey;
-                logMap.set(idKey, l); 
-              }
-            });
-            appState.logs = Array.from(logMap.values());
-          }
-        }
-
-        try {
-          localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
-          localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
-        } catch(e) {}
-
-        recalculateAllLimits();
-        populateBranchDropdown();
-        renderDashboard();
-      }, (err) => console.warn("Firebase listener notice:", err));
     }
 
     function getMaxLimitSeconds(awayReason, branch) {
@@ -685,7 +610,6 @@
       populateBranchDropdown();
 
       renderDashboard();
-      initFirebaseSync();
     });
 
     function setupThemeToggle() {
