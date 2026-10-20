@@ -74,13 +74,13 @@
 </head>
 <body class="bg-midnight text-slate-100 min-h-screen transition-colors duration-200 antialiased relative">
 
-  <!-- MAIN CONTAINER WITH PRECISE HORIZONTAL MARGINS -->
+  <!-- MAIN CONTAINER -->
   <div class="w-full min-h-screen pl-[calc(10mm+52px)] pr-[10mm] py-6 flex flex-col gap-6">
 
     <!-- TOP HEADER -->
     <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-xl bg-midnightCard border-2 border-yellow-accent shadow-lg shadow-yellow-500/10">
       
-      <!-- Title Section with Yellow Alarm Icon -->
+      <!-- Title Section -->
       <div class="flex items-center gap-3">
         <div class="p-3 bg-yellow-500/20 rounded-xl border border-yellow-accent text-accentYellow animate-pulse">
           <i data-lucide="alarm-clock" class="w-8 h-8"></i>
@@ -120,7 +120,7 @@
           </button>
         </div>
 
-        <!-- Manage Teammates Button (Password Protected) -->
+        <!-- Manage Teammates Button -->
         <button id="openTeammatesBtn" class="flex items-center gap-2 px-4 py-2.5 bg-midnight hover:bg-yellow-500/20 text-accentYellow border-2 border-yellow-accent font-bold rounded-lg transition duration-150 shadow-sm">
           <i data-lucide="users" class="w-4 h-4"></i>
           <span>Manage Teammates</span>
@@ -216,14 +216,13 @@
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" id="topOffendersGrid">
-        <!-- Dynamic Cards Inserted Here via JS -->
+        <!-- Dynamic Cards -->
       </div>
     </div>
 
     <!-- CHARTS SECTION -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       
-      <!-- Chart 1: AUX Time Distribution -->
       <div class="p-5 rounded-xl bg-midnightCard border-2 border-yellow-accent flex flex-col gap-4">
         <h3 class="text-md font-bold text-accentYellow flex items-center gap-2">
           <i data-lucide="pie-chart" class="w-5 h-5"></i>
@@ -234,7 +233,6 @@
         </div>
       </div>
 
-      <!-- Chart 2: Top 15 Branch Offenders -->
       <div class="p-5 rounded-xl bg-midnightCard border-2 border-yellow-accent flex flex-col gap-4">
         <h3 class="text-md font-bold text-accentYellow flex items-center gap-2">
           <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
@@ -305,7 +303,7 @@
 
   </div>
 
-  <!-- NOTIFICACIÓN EMERGENTE AL GUARDAR DÍA -->
+  <!-- NOTIFICACIÓN EMERGENTE -->
   <div id="saveDayAlertModal" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none opacity-0 translate-y-[-20px]">
     <div class="bg-midnightCard border-2 border-yellow-accent rounded-xl p-4 shadow-2xl shadow-yellow-500/30 flex items-center gap-4 min-w-[320px] max-w-md pointer-events-auto">
       <div id="saveAlertIconContainer" class="p-3 bg-green-500/20 rounded-xl border border-green-500 text-green-400">
@@ -321,7 +319,7 @@
     </div>
   </div>
 
-  <!-- FIXED THEME TOGGLE ICON (BOTTOM LEFT) -->
+  <!-- THEME TOGGLE -->
   <button id="themeToggleBtn" class="fixed bottom-[10mm] left-[10mm] z-50 p-2.5 rounded-full bg-midnightCard border-2 border-yellow-accent text-accentYellow hover:bg-yellow-500/20 shadow-lg shadow-black/50 transition duration-200" title="Toggle Light / Dark Mode">
     <i data-lucide="sun" id="themeIconSun" class="w-5 h-5 hidden"></i>
     <i data-lucide="moon" id="themeIconMoon" class="w-5 h-5"></i>
@@ -369,7 +367,6 @@
         </button>
       </div>
 
-      <!-- Add New Teammate Form -->
       <form id="addTeammateForm" class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-midnight p-3 rounded-lg border border-yellow-accent">
         <input type="text" id="newTeammateName" placeholder="Teammate Name..." required class="bg-midnightCard border border-yellow-accent rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none">
         <select id="newTeammateBranch" required class="bg-midnightCard border border-yellow-accent rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none">
@@ -386,7 +383,6 @@
         </button>
       </form>
 
-      <!-- Teammates Search & List -->
       <div class="relative">
         <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-slate-400"></i>
         <input type="text" id="searchRosterInput" placeholder="Filter roster..." class="w-full bg-midnight border border-yellow-accent rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none">
@@ -439,9 +435,8 @@
     </div>
   </div>
 
-  <!-- SCRIPT IMPLEMENTATION WITH FIREBASE INTEGRATION -->
+  <!-- SCRIPT IMPLEMENTATION WITH SAFE PERSISTENCE -->
   <script>
-    // --- FIREBASE CONFIGURATION ---
     const firebaseConfig = {
       apiKey: "AIzaSyAUkhxAp6cR2_78FTS1g66WCF8ZkUmXYU4",
       authDomain: "auxstatusdashboard.firebaseapp.com",
@@ -450,7 +445,7 @@
       storageBucket: "auxstatusdashboard.firebasestorage.app",
       messagingSenderId: "993372406272",
       appId: "1:993372406272:web:e61ae859c6a3668de58ee5",
-      measurementId: "G-QGBQFQFQX5Z2"
+      measurementId: "G-QGBQFQX5Z2"
     };
 
     let database = null;
@@ -461,7 +456,6 @@
       console.warn("Firebase Init notice:", err);
     }
 
-    // Helper to extract YYYY-MM-DD local string
     function getLocalDateKey(dateObj) {
       if (!dateObj || isNaN(dateObj.getTime())) return new Date().toISOString().split('T')[0];
       const yyyy = dateObj.getFullYear();
@@ -470,7 +464,6 @@
       return `${yyyy}-${mm}-${dd}`;
     }
 
-    // Flexible date parser for Excel/Sheets tabbed rows
     function parseFlexibleDate(str) {
       if (!str) return null;
       let clean = str.trim().replace(/"/g, '');
@@ -516,7 +509,6 @@
       return null;
     }
 
-    // --- DEFAULT BRANCH MAPPING ---
     const DEFAULT_ROSTER = {
       "MJ Rafols": "Philippines", "Omar Jimenez": "Mexico", "Kevin Williams": "Panama", "Benneth Smith": "Panama",
       "Zinedine Moscote": "Panama", "Dean Spencer": "Panama", "Marie Claire Perez": "Panama", "Ariel Antonio Yaegui Mazate": "Guatemala",
@@ -551,7 +543,6 @@
       "Keyren Fuertes": "Panama", "Jorge Saban": "Guatemala"
     };
 
-    // --- APPLICATION STATE ---
     let appState = {
       roster: { ...DEFAULT_ROSTER },
       logs: [],
@@ -563,7 +554,7 @@
     let topOffendersChartInstance = null;
     let alertTimeout = null;
 
-    // Load LocalStorage immediately synchronously
+    // Direct LocalStorage Synchronous Initialization
     (function loadLocalStorageData() {
       try {
         const localRoster = localStorage.getItem('aux_dashboard_roster');
@@ -577,7 +568,7 @@
         }
         if (localDate) appState.selectedDate = localDate;
       } catch(e) {
-        console.warn("LocalStorage initial load notice:", e);
+        console.warn("LocalStorage load notice:", e);
       }
     })();
 
@@ -590,28 +581,23 @@
     }
 
     function saveStateToStorage() {
-      // Direct LocalStorage sync save
       try {
         localStorage.setItem('aux_dashboard_roster', JSON.stringify(appState.roster));
         localStorage.setItem('aux_dashboard_logs', JSON.stringify(appState.logs));
         localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
       } catch(e) {
-        console.warn("LocalStorage error:", e);
+        console.warn("LocalStorage save error:", e);
       }
 
-      // Background Firebase save
       if (database) {
         database.ref('dashboard_data').set({
           roster: appState.roster,
           logs: appState.logs,
           lastUpdated: Date.now()
-        }).catch(err => {
-          console.warn("Firebase write notice:", err);
-        });
+        }).catch(err => console.warn("Firebase save warning:", err));
       }
     }
 
-    // --- FIREBASE REALTIME SYNC ENGINE ---
     function initFirebaseSync() {
       if (!database) return;
       const dbRef = database.ref('dashboard_data');
@@ -619,12 +605,9 @@
       dbRef.on('value', (snapshot) => {
         const val = snapshot.val();
         if (val) {
-          if (val.roster) {
-            appState.roster = { ...appState.roster, ...val.roster };
-          }
+          if (val.roster) appState.roster = { ...appState.roster, ...val.roster };
           if (val.logs) {
             const remoteLogs = Array.isArray(val.logs) ? val.logs : Object.values(val.logs);
-            
             const logMap = new Map();
             appState.logs.forEach(l => { 
               if (l) {
@@ -640,7 +623,6 @@
                 logMap.set(idKey, l); 
               }
             });
-            
             appState.logs = Array.from(logMap.values());
           }
         }
@@ -653,12 +635,9 @@
         recalculateAllLimits();
         populateBranchDropdown();
         renderDashboard();
-      }, (err) => {
-        console.warn("Firebase listener warning:", err);
-      });
+      }, (err) => console.warn("Firebase listener notice:", err));
     }
 
-    // --- THRESHOLD RULE ENGINE ---
     function getMaxLimitSeconds(awayReason, branch) {
       const rawStatus = (awayReason || '').toLowerCase();
       const statusClean = rawStatus.replace(/[^a-z]/g, '');
@@ -693,7 +672,6 @@
       return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
     }
 
-    // --- DOM INITIALIZATION ---
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
 
@@ -710,7 +688,6 @@
       initFirebaseSync();
     });
 
-    // --- WORKING THEME TOGGLE (SUN / MOON) ---
     function setupThemeToggle() {
       const toggleBtn = document.getElementById('themeToggleBtn');
       const sunIcon = document.getElementById('themeIconSun');
@@ -753,9 +730,7 @@
       modal.classList.add('opacity-100', 'translate-y-0');
 
       if (alertTimeout) clearTimeout(alertTimeout);
-      alertTimeout = setTimeout(() => {
-        hideSaveDayAlert();
-      }, 3000);
+      alertTimeout = setTimeout(() => hideSaveDayAlert(), 3000);
     }
 
     function hideSaveDayAlert() {
@@ -764,7 +739,6 @@
       modal.classList.add('opacity-0', 'translate-y-[-20px]');
     }
 
-    // --- DATE CONTROLS & SAVE DAY ---
     function setupDateControls() {
       const dateInput = document.getElementById('datePicker');
       const prevBtn = document.getElementById('prevDateBtn');
@@ -803,7 +777,6 @@
 
       closeAlertBtn.addEventListener('click', hideSaveDayAlert);
 
-      // SAVE DAY BUTTON CLICK HANDLER
       saveDayBtn.addEventListener('click', (e) => {
         e.preventDefault();
         recalculateAllLimits();
@@ -820,7 +793,6 @@
       });
     }
 
-    // --- MODALS & PASSWORD PROTECTION ---
     function setupModals() {
       const passwordModal = document.getElementById('passwordModal');
       const teammatesModal = document.getElementById('teammatesModal');
@@ -852,7 +824,6 @@
 
       document.getElementById('closePasswordModal').addEventListener('click', () => passwordModal.classList.add('hidden'));
       document.getElementById('cancelPasswordBtn').addEventListener('click', () => passwordModal.classList.add('hidden'));
-
       document.getElementById('closeTeammatesModal').addEventListener('click', () => teammatesModal.classList.add('hidden'));
 
       document.getElementById('addTeammateForm').addEventListener('submit', (e) => {
@@ -869,9 +840,7 @@
         }
       });
 
-      document.getElementById('searchRosterInput').addEventListener('input', () => {
-        renderRosterTable();
-      });
+      document.getElementById('searchRosterInput').addEventListener('input', () => renderRosterTable());
 
       document.getElementById('openImportBtn').addEventListener('click', () => importModal.classList.remove('hidden'));
       document.getElementById('closeImportModal').addEventListener('click', () => importModal.classList.add('hidden'));
@@ -880,7 +849,6 @@
       document.getElementById('processImportBtn').addEventListener('click', processImportData);
     }
 
-    // --- FILTERS & BRANCH DROPDOWN ---
     function setupFilters() {
       document.getElementById('branchFilter').addEventListener('change', () => {
         syncHeaderFiltersWithMain();
@@ -966,7 +934,6 @@
       if (statuses.includes(currentStatus)) statusSelect.value = currentStatus;
     }
 
-    // --- PROCESS PASTE IMPORT ---
     function processImportData() {
       const rawText = document.getElementById('importRawData').value.trim();
       if (!rawText) return;
@@ -1050,7 +1017,6 @@
       });
     }
 
-    // --- MAIN RENDER ENGINE ---
     function renderDashboard() {
       recalculateAllLimits();
       const logsForDate = appState.logs.filter(l => l.date === appState.selectedDate);
@@ -1065,7 +1031,6 @@
       lucide.createIcons();
     }
 
-    // --- KPI CARDS ---
     function renderKPIs(logs) {
       const totalRecords = logs.length;
       const uniqueTeammates = new Set(logs.map(l => l.teammate)).size;
@@ -1100,7 +1065,6 @@
       document.getElementById('statTopOffenderDetails').textContent = maxOvertime > 0 ? `+${Math.round(maxOvertime / 60)}m overtime` : '0 violations';
     }
 
-    // --- TOP OFFENDERS BY STATUS GRID ---
     function renderTopOffendersGrid(logs) {
       const statuses = ['On lunch', 'Restroom break', 'On a break', 'Call Wrap Up', 'On a call'];
       const grid = document.getElementById('topOffendersGrid');
@@ -1146,7 +1110,6 @@
       }).join('');
     }
 
-    // --- TABLE RENDER ---
     function renderLogsTable(logs) {
       const tbody = document.getElementById('logsTableBody');
       document.getElementById('logsCountBadge').textContent = logs.length;
@@ -1190,7 +1153,6 @@
       `).join('');
     }
 
-    // --- CHARTS ---
     function renderCharts(logs = []) {
       const isDark = document.documentElement.classList.contains('dark');
       const textColor = isDark ? '#FACC15' : '#0F172A';
@@ -1269,7 +1231,6 @@
       });
     }
 
-    // --- MANAGE TEAMMATES ROSTER TABLE ---
     function renderRosterTable() {
       const tbody = document.getElementById('rosterTableBody');
       const filter = document.getElementById('searchRosterInput').value.toLowerCase().trim();
@@ -1319,7 +1280,6 @@
       }
     };
 
-    // --- CSV EXPORT ---
     function exportLogsCSV() {
       const filteredLogs = getFilteredLogs();
 
