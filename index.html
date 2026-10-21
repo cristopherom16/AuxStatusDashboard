@@ -211,7 +211,7 @@
         <span class="text-xs text-slate-400">Highest overtime offenders per status category</span>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" id="topOffendersGrid">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" id="topOffendersGrid">
         <!-- Dynamic Cards -->
       </div>
     </div>
@@ -1074,7 +1074,7 @@
     }
 
     function renderTopOffendersGrid(logs) {
-      const statuses = ['On lunch', 'Restroom break', 'On a break', 'Call Wrap Up', 'On a call'];
+      const statuses = ['On lunch', 'Restroom break', 'On a break', 'On a call'];
       const grid = document.getElementById('topOffendersGrid');
 
       grid.innerHTML = statuses.map(status => {
