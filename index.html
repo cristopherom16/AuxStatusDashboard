@@ -419,12 +419,18 @@
 
       <textarea id="importRawData" rows="8" placeholder="Paste copied data here..." class="w-full bg-midnight text-slate-100 font-mono text-xs border border-yellow-accent rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-accentYellow"></textarea>
 
-      <div class="flex justify-end gap-2">
-        <button id="cancelImportBtn" class="px-4 py-2 text-xs font-bold border border-slate-600 rounded-lg hover:bg-slate-800">Cancel</button>
-        <button id="processImportBtn" class="px-5 py-2 bg-accentYellow text-midnight text-xs font-black rounded-lg hover:bg-yellow-400 flex items-center gap-2">
-          <i data-lucide="check" class="w-4 h-4"></i>
-          <span>Process & Save Data</span>
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <button id="clearTodayDataBtn" type="button" class="px-4 py-2 bg-red-600/20 text-red-400 border border-red-500/40 text-xs font-bold rounded-lg hover:bg-red-600/30 transition flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+          <span>Clear Today's Data</span>
         </button>
+        <div class="flex justify-end gap-2">
+          <button id="cancelImportBtn" type="button" class="px-4 py-2 text-xs font-bold border border-slate-600 rounded-lg hover:bg-slate-800">Cancel</button>
+          <button id="processImportBtn" type="button" class="px-5 py-2 bg-accentYellow text-midnight text-xs font-black rounded-lg hover:bg-yellow-400 flex items-center gap-2">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Process & Save Data</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -854,6 +860,23 @@
       document.getElementById('cancelImportBtn').addEventListener('click', () => importModal.classList.add('hidden'));
 
       document.getElementById('processImportBtn').addEventListener('click', processImportData);
+
+      document.getElementById('clearTodayDataBtn').addEventListener('click', () => {
+        const countToday = appState.logs.filter(l => l.date === appState.selectedDate).length;
+        if (countToday === 0) {
+          triggerSaveDayAlert('No Data', `There are no records to delete for ${appState.selectedDate}.`, false);
+          return;
+        }
+
+        if (confirm(`Are you sure you want to delete all ${countToday} records for ${appState.selectedDate}?`)) {
+          appState.logs = appState.logs.filter(l => l.date !== appState.selectedDate);
+          saveStateToStorage();
+          resetActiveSearchFilters();
+          renderDashboard();
+          importModal.classList.add('hidden');
+          triggerSaveDayAlert('Data Cleared', `All records for ${appState.selectedDate} have been deleted.`, true);
+        }
+      });
     }
 
     function setupFilters() {
