@@ -76,7 +76,7 @@
     /* ====================================================
        LIGHT MODE OVERRIDES
        Yellow -> Dark Blue (#1e3a8a)
-       White -> Amber (#d97706 or #ffbf00)
+       White -> Amber (#d97706)
        Gray -> Soft Egg Yellow (#fef9c3 / #fef08a)
     ==================================================== */
     html:not(.dark) body {
@@ -95,7 +95,7 @@
     html:not(.dark) .text-slate-200,
     html:not(.dark) .text-slate-300,
     html:not(.dark) .text-white {
-      color: #d97706 !important; /* Amber for visibility */
+      color: #d97706 !important; /* Amber */
     }
     html:not(.dark) .text-slate-400 {
       color: #b45309 !important; 
@@ -436,7 +436,7 @@
         <input type="text" id="newTeammateName" placeholder="Teammate Name..." required class="bg-midnightCard border border-yellow-accent rounded px-3 py-2 text-slate-200 focus:outline-none text-center">
         
         <select id="newTeammateTeam" required class="bg-midnightCard border border-yellow-accent rounded px-3 py-2 text-slate-200 focus:outline-none text-center">
-          <!-- Populated dynamically -->
+          <!-- Populated dynamically with Management and others -->
         </select>
         
         <select id="newTeammateBranch" required class="bg-midnightCard border border-yellow-accent rounded px-3 py-2 text-slate-200 focus:outline-none text-center">
@@ -473,6 +473,58 @@
           </tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- EDIT TEAMMATE MODAL -->
+  <div id="editTeammateModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 hidden text-center">
+    <div class="bg-midnightCard border-2 border-yellow-accent rounded-xl w-full max-w-md p-6 flex flex-col gap-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-yellow-accent pb-3">
+        <h3 class="font-black text-accentYellow flex items-center gap-2">
+          <i data-lucide="user-cog" class="w-6 h-6"></i>
+          <span>Edit Teammate Information</span>
+        </h3>
+        <button id="closeEditTeammateModal" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+      </div>
+
+      <form id="editTeammateForm" class="flex flex-col gap-3">
+        <input type="hidden" id="editOriginalName">
+
+        <div class="flex flex-col text-left gap-1">
+          <label class="text-xs font-bold text-slate-400">Teammate Name</label>
+          <input type="text" id="editTeammateName" required class="w-full bg-midnight text-slate-100 border border-yellow-accent rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-accentYellow text-center font-bold">
+        </div>
+
+        <div class="flex flex-col text-left gap-1">
+          <label class="text-xs font-bold text-slate-400">Team</label>
+          <select id="editTeammateTeam" required class="w-full bg-midnight text-slate-100 border border-yellow-accent rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-accentYellow text-center">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <div class="flex flex-col text-left gap-1">
+          <label class="text-xs font-bold text-slate-400">Branch / Country</label>
+          <select id="editTeammateBranch" required class="w-full bg-midnight text-slate-100 border border-yellow-accent rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-accentYellow text-center">
+            <option value="Guatemala">Guatemala</option>
+            <option value="Panama">Panama</option>
+            <option value="Mexico">Mexico</option>
+            <option value="Jamaica">Jamaica</option>
+            <option value="Philippines">Philippines</option>
+            <option value="Colombia">Colombia</option>
+            <option value="USA">USA</option>
+          </select>
+        </div>
+
+        <div class="flex justify-center gap-4 mt-3">
+          <button type="button" id="cancelEditTeammateBtn" class="px-5 py-2 font-bold border border-slate-600 rounded-lg hover:bg-slate-800">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-accentYellow text-midnight font-black rounded-lg hover:bg-yellow-400 flex items-center gap-1.5">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            <span>Save Changes</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -626,7 +678,7 @@
     }
 
     const KNOWN_TEAMS = [
-      "OBS - Phones", "OBS - Cases", "ELD - Phones", "ELD - Cases", 
+      "Management", "OBS - Phones", "OBS - Cases", "ELD - Phones", "ELD - Cases", 
       "INS - Phones", "INS - Cases", "LL+ Support", "TFX Support", "After Hours Support"
     ];
 
@@ -895,8 +947,9 @@
     });
 
     function populateTeamSelectionOptions() {
-      const teamSelect = document.getElementById('newTeammateTeam');
-      teamSelect.innerHTML = KNOWN_TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
+      const teamOptionsHtml = KNOWN_TEAMS.map(t => `<option value="${t}">${t}</option>`).join('');
+      document.getElementById('newTeammateTeam').innerHTML = teamOptionsHtml;
+      document.getElementById('editTeammateTeam').innerHTML = teamOptionsHtml;
     }
 
     function setupThemeToggle() {
@@ -1007,6 +1060,7 @@
     function setupModals() {
       const passwordModal = document.getElementById('passwordModal');
       const teammatesModal = document.getElementById('teammatesModal');
+      const editTeammateModal = document.getElementById('editTeammateModal');
       const importModal = document.getElementById('importModal');
 
       document.getElementById('openTeammatesBtn').addEventListener('click', () => {
@@ -1051,6 +1105,36 @@
           renderDashboard();
         }
       });
+
+      document.getElementById('editTeammateForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const origName = document.getElementById('editOriginalName').value;
+        const newName = document.getElementById('editTeammateName').value.trim();
+        const newTeam = document.getElementById('editTeammateTeam').value;
+        const newBranch = document.getElementById('editTeammateBranch').value;
+
+        if (!newName) return;
+
+        if (origName !== newName) {
+          delete appState.roster[origName];
+          appState.logs.forEach(l => {
+            if (l.teammate === origName) {
+              l.teammate = newName;
+            }
+          });
+        }
+
+        appState.roster[newName] = { branch: newBranch, team: newTeam };
+        recalculateAllLimits();
+        saveStateToStorage();
+        editTeammateModal.classList.add('hidden');
+        renderRosterTable();
+        populateDropdowns();
+        renderDashboard();
+      });
+
+      document.getElementById('closeEditTeammateModal').addEventListener('click', () => editTeammateModal.classList.add('hidden'));
+      document.getElementById('cancelEditTeammateBtn').addEventListener('click', () => editTeammateModal.classList.add('hidden'));
 
       document.getElementById('searchRosterInput').addEventListener('input', () => renderRosterTable());
 
@@ -1570,10 +1654,10 @@
           <td class="p-3 border-r border-yellow-500/20 text-slate-300">${data.team}</td>
           <td class="p-3 border-r border-yellow-500/20 text-slate-300">${data.branch}</td>
           <td class="p-3 text-center flex items-center justify-center gap-4">
-            <button onclick="window.editTeammate('${name}')" class="p-1 hover:text-accentYellow text-slate-400" title="Edit">
+            <button onclick="window.openEditTeammateModal('${name.replace(/'/g, "\\'")}')" class="p-1 hover:text-accentYellow text-slate-400" title="Edit">
               <i data-lucide="edit-3" class="w-5 h-5"></i>
             </button>
-            <button onclick="window.deleteTeammate('${name}')" class="p-1 hover:text-red-400 text-slate-400" title="Delete">
+            <button onclick="window.deleteTeammate('${name.replace(/'/g, "\\'")}')" class="p-1 hover:text-red-400 text-slate-400" title="Delete">
               <i data-lucide="trash-2" class="w-5 h-5"></i>
             </button>
           </td>
@@ -1583,17 +1667,17 @@
       lucide.createIcons();
     }
 
-    window.editTeammate = function(oldName) {
-      const newName = prompt('Edit Teammate Name:', oldName);
-      if (newName && newName.trim()) {
-        const currentData = appState.roster[oldName];
-        delete appState.roster[oldName];
-        appState.roster[newName.trim()] = currentData;
-        saveStateToStorage();
-        renderRosterTable();
-        populateDropdowns();
-        renderDashboard();
-      }
+    window.openEditTeammateModal = function(name) {
+      const member = appState.roster[name];
+      if (!member) return;
+
+      document.getElementById('editOriginalName').value = name;
+      document.getElementById('editTeammateName').value = name;
+      document.getElementById('editTeammateTeam').value = member.team || 'OBS - Phones';
+      document.getElementById('editTeammateBranch').value = member.branch || 'Guatemala';
+
+      document.getElementById('editTeammateModal').classList.remove('hidden');
+      lucide.createIcons();
     };
 
     window.deleteTeammate = function(name) {
