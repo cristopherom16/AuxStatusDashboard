@@ -796,20 +796,29 @@
     let pendingImportLogs = [];
     let pendingImportedDate = null;
     let pendingUnknownAgents = [];
+    let hasUserChangedDate = false;
+
+    function getLatestDateWithLogs() {
+      if (!appState.logs || appState.logs.length === 0) {
+        return getLocalDateKey(new Date());
+      }
+      const uniqueDates = [...new Set(appState.logs.map(l => l.date).filter(Boolean))].sort();
+      return uniqueDates.length > 0 ? uniqueDates[uniqueDates.length - 1] : getLocalDateKey(new Date());
+    }
 
     // Load LocalStorage Synchronously
     (function loadLocalStorageData() {
       try {
         const localRoster = localStorage.getItem('aux_dashboard_roster_v2');
         const localLogs = localStorage.getItem('aux_dashboard_logs_v2');
-        const localDate = localStorage.getItem('aux_dashboard_selected_date');
         
         if (localRoster) appState.roster = JSON.parse(localRoster);
         if (localLogs) {
           const parsed = JSON.parse(localLogs);
           if (Array.isArray(parsed)) appState.logs = parsed;
         }
-        if (localDate) appState.selectedDate = localDate;
+        // Always default to the latest date that has logs
+        appState.selectedDate = getLatestDateWithLogs();
       } catch(e) {
         console.warn("LocalStorage notice:", e);
       }
@@ -829,7 +838,6 @@
       try {
         localStorage.setItem('aux_dashboard_roster_v2', JSON.stringify(appState.roster));
         localStorage.setItem('aux_dashboard_logs_v2', JSON.stringify(appState.logs));
-        localStorage.setItem('aux_dashboard_selected_date', appState.selectedDate);
       } catch(e) {
         console.warn("LocalStorage save error:", e);
       }
@@ -885,6 +893,13 @@
             localStorage.setItem('aux_dashboard_logs_v2', JSON.stringify(appState.logs));
           } catch(e) {}
 
+          // If the user hasn't actively navigated to another date yet, default to the latest date with logs
+          if (!hasUserChangedDate) {
+            appState.selectedDate = getLatestDateWithLogs();
+            const datePicker = document.getElementById('datePicker');
+            if (datePicker) datePicker.value = appState.selectedDate;
+          }
+
           recalculateAllLimits();
           populateDropdowns();
           renderDashboard();
@@ -932,6 +947,8 @@
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
 
+      // Ensure default selected date on page refresh is the latest day with records
+      appState.selectedDate = getLatestDateWithLogs();
       const dateInput = document.getElementById('datePicker');
       dateInput.value = appState.selectedDate;
 
@@ -1011,30 +1028,30 @@
       const closeAlertBtn = document.getElementById('closeSaveAlertBtn');
 
       dateInput.addEventListener('change', (e) => {
+        hasUserChangedDate = true;
         appState.selectedDate = e.target.value;
-        saveStateToStorage();
         resetActiveSearchFilters();
         renderDashboard();
       });
 
       prevBtn.addEventListener('click', () => {
+        hasUserChangedDate = true;
         const parts = appState.selectedDate.split('-');
         const current = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
         current.setDate(current.getDate() - 1);
         appState.selectedDate = getLocalDateKey(current);
         dateInput.value = appState.selectedDate;
-        saveStateToStorage();
         resetActiveSearchFilters();
         renderDashboard();
       });
 
       nextBtn.addEventListener('click', () => {
+        hasUserChangedDate = true;
         const parts = appState.selectedDate.split('-');
         const current = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
         current.setDate(current.getDate() + 1);
         appState.selectedDate = getLocalDateKey(current);
         dateInput.value = appState.selectedDate;
-        saveStateToStorage();
         resetActiveSearchFilters();
         renderDashboard();
       });
@@ -1154,10 +1171,12 @@
         if (confirm(`Are you sure you want to delete all ${countToday} records for ${appState.selectedDate}?`)) {
           appState.logs = appState.logs.filter(l => l.date !== appState.selectedDate);
           saveStateToStorage();
+          appState.selectedDate = getLatestDateWithLogs();
+          document.getElementById('datePicker').value = appState.selectedDate;
           resetActiveSearchFilters();
           renderDashboard();
           importModal.classList.add('hidden');
-          triggerSaveDayAlert('Data Cleared', `All records for ${appState.selectedDate} have been deleted.`, true);
+          triggerSaveDayAlert('Data Cleared', `All records for that date have been deleted.`, true);
         }
       });
 
@@ -1390,10 +1409,9 @@
 
       const parsedCount = pendingImportLogs.length;
 
-      if (pendingImportedDate) {
-        appState.selectedDate = pendingImportedDate;
-        document.getElementById('datePicker').value = pendingImportedDate;
-      }
+      // Automatically focus on the imported date or latest date
+      appState.selectedDate = pendingImportedDate || getLatestDateWithLogs();
+      document.getElementById('datePicker').value = appState.selectedDate;
 
       resetActiveSearchFilters();
       recalculateAllLimits();
